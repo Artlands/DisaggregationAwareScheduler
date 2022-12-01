@@ -128,5 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Experiment results
+# Experiment results and temporary python files
 *.json
+tmp*.py

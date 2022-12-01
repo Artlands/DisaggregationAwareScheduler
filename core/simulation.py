@@ -2,7 +2,8 @@ from core.monitor import Monitor
 
 
 class Simulation(object):
-  def __init__(self, env, cluster, job_broker, scheduler, cluster_state_file=None, jobs_summary_file=None):
+  def __init__(self, env, cluster, job_broker, scheduler, 
+               cluster_state_file=None, jobs_summary_file=None):
     self.env = env
     self.cluster = cluster
     self.job_broker = job_broker

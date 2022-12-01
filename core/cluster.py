@@ -3,59 +3,74 @@ from core.rack import Rack
 
 
 class Cluster(object):
-  def __init__(self, nodes_per_rack = 256):
+  def __init__(self):
     self.racks = []
     self.jobs = []
-    self.nodes_per_rack = nodes_per_rack
   
-  def add_racks(self, node_configs):
-    rack_node_configs = []
-    for node_config in node_configs:
-      rack_node_configs.append(node_config)
-      if len(rack_node_configs) == self.nodes_per_rack:
-        rack = Rack()
-        self.racks.append(rack)
-        rack.add_nodes(rack_node_configs)
-        rack.attach(self)
-        rack_node_configs = []
-    if rack_node_configs:
-      rack = Rack()
+  def add_racks(self, racks):
+    for rack in racks:
       self.racks.append(rack)
-      rack.add_nodes(rack_node_configs)
       rack.attach(self)
 
   def add_job(self, job):
     self.jobs.append(job)
 
-  def accommodate(self, job):
-    return len(self.total_free_nodes) >= job.nnodes \
-            and self.total_free_memory >= (job.memory * job.nnodes)
+  def accommodate(self, job, disaggregation=False):
+    # Check the memory requirement, if exceeds the node memory capacity,
+    # mark the job failed.
+    if not disaggregation:
+      if job.memory > self.compute_node_memory_capacity:
+        job.failed = True
+        job.started = True
+        job.finished = True
+        return False
+    return len(self.total_free_compute_nodes) >= job.nnodes
 
   @property
-  def total_nodes(self):
-    ls = []
+  def compute_node_memory_capacity(self):
+    return self.racks[0].compute_nodes[0].memory_capacity
+
+  @property
+  def total_compute_nodes(self):
+    total_compute_nodes = []
     for rack in self.racks:
-      ls.extend(rack.nodes)
-    ls.sort(key=operator.attrgetter('id'))
-    return ls
+      total_compute_nodes.extend(rack.compute_nodes)
+    total_compute_nodes.sort(key=operator.attrgetter('id'))
+    return total_compute_nodes
 
   @property
-  def total_free_nodes(self):
-    ls = []
-    for node in self.total_nodes:
+  def total_memory_nodes(self):
+    total_memory_nodes = []
+    for rack in self.racks:
+      total_memory_nodes.extend(rack.memory_nodes)
+    total_memory_nodes.sort(key=operator.attrgetter('id'))
+    return total_memory_nodes
+
+  @property
+  def total_free_compute_nodes(self):
+    total_free_compute_nodes = []
+    for node in self.total_compute_nodes:
       if not node.allocated:
-        ls.append(node)
+        total_free_compute_nodes.append(node)
     # Sort nodes by node id
-    ls.sort(key=operator.attrgetter('id'))
-    return ls
+    total_free_compute_nodes.sort(key=operator.attrgetter('id'))
+    return total_free_compute_nodes
 
   @property
-  def total_memory_capacity(self):
-    return sum([node.memory_capacity for node in self.total_nodes])
+  def total_local_memory_capacity(self):
+    return sum([node.memory_capacity for node in self.total_compute_nodes])
 
   @property
-  def total_free_memory(self):
-    return sum([node.free_memory for node in self.total_nodes])
+  def total_remote_memory_capacity(self):
+    return sum([node.memory_capacity for node in self.total_memory_nodes])
+
+  @property
+  def total_local_free_memory(self):
+    return sum([node.free_memory for node in self.total_compute_nodes])
+
+  @property
+  def total_remote_free_memory(self):
+    return sum([node.free_memory for node in self.total_memory_nodes])
 
   @property
   def finished_jobs(self):
@@ -73,6 +88,14 @@ class Cluster(object):
       if not job.finished:
         ls.append(job)
     ls.sort(key=operator.attrgetter('id'))
+    return ls
+
+  @property
+  def failed_jobs(self):
+    ls = []
+    for job in self.jobs:
+      if job.failed:
+        ls.append(job)
     return ls
 
   @property
@@ -97,22 +120,36 @@ class Cluster(object):
     return {
       'arrived_jobs': len(self.jobs),
       'finished_jobs': len(self.finished_jobs),
+      'failed_jobs': len(self.failed_jobs),
       'running_jobs':  len(self.running_jobs),
       'jobs_in_waiting_queue': len(self.jobs_in_waiting_queue),
-      'nodes_utilization': (len(self.total_nodes) - len(self.total_free_nodes))/(len(self.total_nodes)),
-      'total_memory_utilization': (self.total_memory_capacity - self.total_free_memory)/self.total_memory_capacity
+      'compute_nodes_utilization': (len(self.total_compute_nodes) - len(self.total_free_compute_nodes))/(len(self.total_compute_nodes)),
+      'total_local_memory_utilization': (self.total_local_memory_capacity - self.total_local_free_memory)/self.total_local_memory_capacity,
+      'total_remote_memory_utilization': (self.total_remote_memory_capacity - self.total_remote_free_memory)/self.total_remote_memory_capacity
     }
 
   @property
   def jobs_summary(self):
     jobs_summary = {}
     for job in self.jobs:
-      jobs_summary[job.id] = {
-        'submit': int(job.submit),
-        'start': int(job.started_timestamp),
-        'end': int(job.finished_timestamp),
-        'nnodes': int(job.nnodes),
-        'memory': int(job.memory),
-        'duration': int(job.duration),
-      }
+      if not job.failed:
+        jobs_summary[job.id] = {
+          'submit': int(job.submit),
+          'start': int(job.started_timestamp),
+          'end': int(job.finished_timestamp),
+          'nnodes': int(job.nnodes),
+          'memory': int(job.memory),
+          'duration': int(job.duration),
+          'failed': job.failed
+        }
+      else:
+        jobs_summary[job.id] = {
+          'submit': int(job.submit),
+          'start': 0,
+          'end': 0,
+          'nnodes': int(job.nnodes),
+          'memory': int(job.memory),
+          'duration': 0,
+          'failed': job.failed
+        }
     return jobs_summary

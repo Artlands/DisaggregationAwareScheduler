@@ -1,7 +1,8 @@
 class Scheduler(object):
-  def __init__(self, env, algorithm):
+  def __init__(self, env, algorithm, disaggregation=False):
     self.env = env
     self.algorithm = algorithm
+    self.disaggregation = disaggregation
     self.simulation = None
     self.cluster = None
     self.destroyed = False
@@ -12,11 +13,11 @@ class Scheduler(object):
 
   def make_decision(self):
     while True:
-      nodes, job = self.algorithm(self.cluster, self.env.now)
+      job, nodes, memory_nodes = self.algorithm(self.cluster, self.disaggregation, self.env.now)
       if nodes is None or job is None:
         break
       else:
-        job.start(nodes)
+        job.start(nodes, memory_nodes)
 
   def run(self):
     while not self.simulation.finished:
