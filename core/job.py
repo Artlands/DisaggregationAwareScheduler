@@ -37,7 +37,7 @@ class Job(object):
     yield self.env.timeout(self.duration)
     self.finished = True
     self.finished_timestamp = self.env.now
-    # print(f'Job {self.id} finish time: {self.env.now}')
+    print(f'Job {self.id} finish @: {self.env.now}')
 
     for node in self.allocated_nodes:
       node.stop_job(self)
@@ -51,7 +51,7 @@ class Job(object):
   def start(self, nodes, memory_nodes):
     self.started = True
     self.started_timestamp = self.env.now
-    print(f'Job {self.id} start time: {self.started_timestamp}')
+    print(f'Job {self.id} start @: {self.started_timestamp}')
 
     self.allocated_nodes = nodes
     for node in self.allocated_nodes:

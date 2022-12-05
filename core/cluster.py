@@ -3,17 +3,17 @@ from core.rack import Rack
 
 
 class Cluster(object):
-  def __init__(self):
+  def __init__(self, status):
     self.disaggregation = False
+    self.status = status
     self.racks = []
     self.jobs = []
     self.failed_jobs = []
   
-  def add_racks(self, racks):
+  def add_rack(self, rack):
     # print(f'# of racks: {len(racks)}')
-    for rack in racks:
-      self.racks.append(rack)
-      rack.attach(self)
+    self.racks.append(rack)
+    rack.attach(self)
 
   def add_job(self, job):
     self.jobs.append(job)

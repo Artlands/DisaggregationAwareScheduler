@@ -17,6 +17,8 @@ class Node(object):
     self.allocated_memory = 0
     self.memory_capacity = node_config.memory_capacity
     self.memory_granularity = memory_granularity
+    self.rack = None
+    self.cluster = None
 
   def attach(self, rack, cluster):
     self.rack = rack
@@ -37,13 +39,15 @@ class ComputeNode(Node):
     self.job = None
 
   def run_job(self, job):
-    print(f'Rack {self.rack.id} - Compute Node {self.id} runs Job {job.id}')
+    if self.cluster.status == True:
+      print(f'Compute Node {self.rack.id}-{self.id} runs Job {job.id}')
     self.allocated_memory += self.resource_round_up(min(job.memory, self.memory_capacity))
     self.allocated = True
     self.job = job
 
   def stop_job(self, job):
-    print(f'Rack {self.rack.id} - Compute Node {self.id} stops Job {job.id}')
+    if self.cluster.status == True:
+      print(f'Compute Node {self.rack.id}-{self.id} stops Job {job.id}')
     self.allocated_memory -= self.resource_round_up(min(job.memory, self.memory_capacity))
     self.allocated = False
     self.job = None
@@ -56,11 +60,13 @@ class MemoryNode(Node):
     self.jobs = []
 
   def allocate_memory(self, job, remote_memory):
-    print(f'Rack {self.rack.id} - Memory Node {self.id} allocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
+    if self.cluster.status == True:
+      print(f'Memory Node {self.rack.id}-{self.id} allocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
     self.allocated_memory += self.resource_round_up(remote_memory)
     self.jobs.append(job)
 
   def deallocate_memory(self, job, remote_memory):
-    print(f'Rack {self.rack.id} - Memory Node {self.id} deallocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
+    if self.cluster.status == True:
+      print(f'Memory Node {self.rack.id}-{self.id} deallocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
     self.allocated_memory -= self.resource_round_up(remote_memory)
     self.jobs.remove(job)

@@ -40,18 +40,21 @@ class RackFirstAlgorithm(Algorithm):
             compute_nodes.sort(key=attrgetter('id'))
             # Allocate compute nodes in the current rack as much as possible.
             number_of_allocated_nodes = min(len(compute_nodes), number_of_remaining_nodes)
+              
             # Update candidate lists
-            candidate_nodes.extend(compute_nodes[:number_of_allocated_nodes])
-            candidate_racks.append(select_rack)
-            number_tasks_on_racks.append(number_of_allocated_nodes)
-            
-            number_of_remaining_nodes -= number_of_allocated_nodes
+            if number_of_allocated_nodes > 0:
+              candidate_nodes.extend(compute_nodes[:number_of_allocated_nodes])
+              candidate_racks.append(select_rack)
+              number_tasks_on_racks.append(number_of_allocated_nodes)
+              number_of_remaining_nodes -= number_of_allocated_nodes
+              
             if number_of_remaining_nodes == 0:
               break
             
           # print(f'Allocated nodes: {[node.id for node in candidate_nodes]} for job {job.id}')
           # Should always be true since we've already checked the cluster nodes capacity and the job allocate enough free nodes.
           # assert number_of_remaining_nodes == 0
+          
           # Successfully allocate compute nodes, now check the memory capacity requirement
           if compute_node_memory_capacity >= job.memory:
             break
@@ -66,7 +69,7 @@ class RackFirstAlgorithm(Algorithm):
                 number_unassiged_remote_memory_units = number_tasks_on_this_rack
                 memory_nodes = c_rack.memory_nodes
                 memory_nodes.sort(key=attrgetter('free_memory'), reverse=True)
-
+                
                 # Allocate the remote memory to the job's tasks as much as possible.
                 for memory_node in memory_nodes:
                   remote_memory_record = {'memory_node': memory_node, 'remote_memory': 0}
@@ -123,7 +126,8 @@ class RackFirstAlgorithm(Algorithm):
               candidate_job = None
               candidate_nodes = []
               candidate_memory_nodes = []
-        return candidate_job, candidate_nodes, candidate_memory_nodes
+        
+          return candidate_job, candidate_nodes, candidate_memory_nodes
     return candidate_job, candidate_nodes, candidate_memory_nodes
 
   def sort_rack_ids(self, rack_id, total_nracks):
