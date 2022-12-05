@@ -16,7 +16,7 @@ def main():
   # Monitoring option
   monitor = True    # Generate monitoring files
   status = True     # Print node status
-  raw_id=False      # Use raw job IDs
+  raw_id = False      # Use raw job IDs
   
   # Set up file for storing the monitoring data
   if monitor:
