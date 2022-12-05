@@ -1,8 +1,7 @@
 class Scheduler(object):
-  def __init__(self, env, algorithm, disaggregation=False):
+  def __init__(self, env, algorithm):
     self.env = env
     self.algorithm = algorithm
-    self.disaggregation = disaggregation
     self.simulation = None
     self.cluster = None
     self.destroyed = False

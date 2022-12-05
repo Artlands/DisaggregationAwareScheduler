@@ -15,10 +15,10 @@ from algorithms.rack_first import RackFirstAlgorithm
 def main():
   # Monitoring option
   monitor = True    # Generate monitoring files
-  status = True     # Print node status
-  raw_id = False      # Use raw job IDs
+  status = True     # Print node status when running or stopping jobs
+  raw_id = False    # Use raw job IDs in job configurations
   
-  # Set up file for storing the monitoring data
+  # Set up files for storing the monitoring data
   if monitor:
     cluster_state_file = './monitoring/cluster_state_file_t.json'
     jobs_summary_file = './monitoring/jobs_summary_file_t.json'
@@ -37,12 +37,12 @@ def main():
   cluster = Cluster(status)
   cluster.set_disaggregation(disaggregation)
   
-  total_racks = 6                     # Configure total number of racks
-  compute_nodes_per_rack = 12         # Configure number of computer nodes in each rack
-  memory_nodes_per_rack = 8           # Configure number of memory nodes in each rack
-  compute_node_memory_capacity = 128  # Computer node memory in GB
-  memory_node_memory_capacity = 2048  # Memory node memory in GB
-  memory_granularity = 4              # Memory allocation granularity in GB  
+  total_racks = 6                     # Total number of racks
+  compute_nodes_per_rack = 12         # Number of computer nodes in each rack
+  memory_nodes_per_rack = 8           # Number of memory nodes in each rack
+  compute_node_memory_capacity = 128  # Memory capacity of the computer node (in GB)
+  memory_node_memory_capacity = 2048  # memory capacity of the memory node (in GB)
+  memory_granularity = 4              # Memory allocation granularity (in GB) 
   
   for _ in range(total_racks):
     node_configs = []
@@ -59,17 +59,17 @@ def main():
   total_jobs = 14110
   jobs_csv = './job_configs.csv'
   csv_reader = CSVReader(jobs_csv)
-  job_configs = csv_reader.generate(1000, 1000)    # First parameter: starting point in the csv file
-                                                  # Second parameter: total number of job records
+  job_configs = csv_reader.generate(1000, 100)    # First parameter: starting point in the csv file
+                                                   # Second parameter: total number of job records
 
   # Simulation environment
   env = simpy.Environment()
 
-  # Job broker - submits job to the cluster
+  # Job broker: submits job to the cluster
   job_broker = Broker(env, job_configs, raw_id)
 
   # Job scheduler
-  scheduler = Scheduler(env, algorithm, disaggregation)
+  scheduler = Scheduler(env, algorithm)
 
   # Create simulation for the current settings
   simulation = Simulation(env, cluster, job_broker, scheduler, cluster_state_file, jobs_summary_file)
