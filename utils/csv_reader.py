@@ -12,12 +12,13 @@ class CSVReader(object):
     job_configs = []
     for i in range(len(df)):
       series = df.iloc[i]
+      jobid = series.jobid
       submit = series.submit
       nnodes = series.nnodes
       memory = series.memory
       duration = series.duration
 
-      job_configs.append(JobConfig(submit, nnodes, memory, duration))
+      job_configs.append(JobConfig(jobid, submit, nnodes, memory, duration))
 
     job_configs.sort(key=attrgetter('submit'))
 

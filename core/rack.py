@@ -13,32 +13,25 @@ class Rack(object):
   def attach(self, cluster):
     self.cluster = cluster
 
-  def add_nodes(self, node_configs):
+  def add_nodes(self, node_configs, memory_granularity):
     for node_config in node_configs:
       if node_config.ntype == 'compute':
-        node = ComputeNode(node_config)
+        node = ComputeNode(node_config, memory_granularity)
+        # print(f'Add node: {node.id}')
         self.compute_nodes.append(node)
       elif node_config.ntype == 'memory':
-        node = MemoryNode(node_config)
+        node = MemoryNode(node_config, memory_granularity)
         self.memory_nodes.append(node)
       else:
         pass
       node.attach(self, self.cluster)
 
-  def accommodate(self, job, disaggregation=False):
-    # Check the memory requirement, if exceeds the node memory capacity,
-    # mark the job failed.
-    if not disaggregation:
-      if job.memory > self.compute_node_memory_capacity:
-        job.failed = True
-        job.started = True
-        job.finished = True
-        return False
+  def accommodate(self, job):
     return len(self.free_compute_nodes) >= job.nnodes
-
+  
   @property
-  def compute_node_memory_capacity(self):
-    return self.compute_nodes[0].memory_capacity
+  def number_of_free_compute_nodes(self):
+    return len(self.free_compute_nodes)
 
   @property
   def free_local_memory(self):

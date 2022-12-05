@@ -129,5 +129,6 @@ dmypy.json
 .pyre/
 
 # Experiment results and temporary python files
+/monitoring
 *.json
 tmp*.py

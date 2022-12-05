@@ -11,18 +11,19 @@ class NodeConfig(object):
 
 
 class Node(object):
-  def __init__(self, node_config):
+  def __init__(self, node_config, memory_granularity):
     self.id = node_config.id
     self.allocated = node_config.allocated
     self.allocated_memory = 0
     self.memory_capacity = node_config.memory_capacity
+    self.memory_granularity = memory_granularity
 
   def attach(self, rack, cluster):
     self.rack = rack
     self.cluster = cluster
 
-  def resource_round_up(self, x, base=4):
-    return base * (int(math.ceil(x/base)))
+  def resource_round_up(self, x):
+    return self.memory_granularity * (int(math.ceil(x/self.memory_granularity)))
 
   @property
   def free_memory(self):
@@ -30,32 +31,36 @@ class Node(object):
 
 
 class ComputeNode(Node):
-  def __init__(self, node_config):
-    Node.__init__(self, node_config)
+  def __init__(self, node_config, memory_granularity):
+    Node.__init__(self, node_config, memory_granularity)
     self.ntype = 'compute'
     self.job = None
 
   def run_job(self, job):
-    self.allocated_memory += self.resource_round_up(job.local_memory)
+    print(f'Rack {self.rack.id} - Compute Node {self.id} runs Job {job.id}')
+    self.allocated_memory += self.resource_round_up(min(job.memory, self.memory_capacity))
     self.allocated = True
     self.job = job
 
   def stop_job(self, job):
-    self.allocated_memory -= self.resource_round_up(job.local_memory)
+    print(f'Rack {self.rack.id} - Compute Node {self.id} stops Job {job.id}')
+    self.allocated_memory -= self.resource_round_up(min(job.memory, self.memory_capacity))
     self.allocated = False
     self.job = None
   
 
 class MemoryNode(Node):
-  def __init__(self, node_config):
-    Node.__init__(self, node_config)
+  def __init__(self, node_config, memory_granularity):
+    Node.__init__(self, node_config, memory_granularity)
     self.ntype = 'memory'
     self.jobs = []
 
-  def allocate_memory(self, job):
-    self.allocated_memory += self.resource_round_up(job.remote_memory)
+  def allocate_memory(self, job, remote_memory):
+    print(f'Rack {self.rack.id} - Memory Node {self.id} allocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
+    self.allocated_memory += self.resource_round_up(remote_memory)
     self.jobs.append(job)
 
-  def deallocate_memory(self, job):
-    self.allocated_memory -= self.resource_round_up(job.remote_memory)
+  def deallocate_memory(self, job, remote_memory):
+    print(f'Rack {self.rack.id} - Memory Node {self.id} deallocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
+    self.allocated_memory -= self.resource_round_up(remote_memory)
     self.jobs.remove(job)
