@@ -41,6 +41,10 @@ class Cluster(object):
     return self.racks[0].compute_nodes[0].memory_capacity
   
   @property
+  def memory_node_memory_capacity(self):
+    return self.racks[0].memory_nodes[0].memory_capacity
+  
+  @property
   def memory_granularity(self):
     return self.racks[0].compute_nodes[0].memory_granularity
 
@@ -145,7 +149,8 @@ class Cluster(object):
   def jobs_summary(self):
     jobs_summary = {}
     for job in self.jobs:
-      jobs_summary[job.id] = {
+      job_id_str = str(job.id)
+      jobs_summary[job_id_str] = {
         'submit': int(job.submit),
         'start': int(job.started_timestamp),
         'end': int(job.finished_timestamp),
@@ -158,7 +163,8 @@ class Cluster(object):
     for record in self.failed_jobs:
       job = record['job']
       reasone = record['reason']
-      jobs_summary[job.id] = {
+      job_id_str = str(job.id)
+      jobs_summary[job_id_str] = {
         'submit': int(job.submit),
         'start': 0,
         'end': 0,

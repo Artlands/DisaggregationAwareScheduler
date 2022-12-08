@@ -1,3 +1,4 @@
+import math
 from core.job import Job
 
 
@@ -27,16 +28,20 @@ class Broker(object):
         self.cluster.add_failed_jobs(job, 'out-of-available-nodes')
       else:
         # Check if job requests more memories than the cluster has   
-        if self.cluster.disaggregation:
-          total_remote_memory = (job.memory - self.cluster.compute_node_memory_capacity) * job.nnodes
-          if total_remote_memory > self.cluster.total_remote_memory_capacity:
-            self.cluster.add_failed_jobs(job, 'out-of-memory')
+        if job.memory > self.cluster.compute_node_memory_capacity:
+          if self.cluster.disaggregation:
+            remote_memory = job.memory - self.cluster.compute_node_memory_capacity
+            memory_node_memory_capacity = self.cluster.memory_node_memory_capacity
+            memory_units_supported_per_node = int(math.floor(memory_node_memory_capacity/remote_memory))
+            memory_units_supported = memory_units_supported_per_node * (len(self.cluster.total_memory_nodes))
+            if memory_units_supported >= job.nnodes:
+              self.cluster.add_job(job)
+            else:
+              self.cluster.add_failed_jobs(job, 'out-of-memory')
           else:
-            self.cluster.add_job(job)
+              self.cluster.add_failed_jobs(job, 'out-of-memory')
         else:
-          if job.memory > self.cluster.compute_node_memory_capacity:
-            self.cluster.add_failed_jobs(job, 'out-of-memory')
-          else:
-            self.cluster.add_job(job)
+          self.cluster.add_job(job)
+          
       
     self.destroyed = True

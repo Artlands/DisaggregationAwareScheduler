@@ -23,8 +23,11 @@ class CSVReader(object):
     job_configs.sort(key=attrgetter('submit'))
 
     self.job_configs = job_configs
+    self.number = len(df)
 
-  def generate(self, offset, number):
+  def generate(self, offset=0, number=0):
+    if number <= 0:
+      number = self.number
     number = number if offset + number < len(self.job_configs) else len(self.job_configs) - offset
     ret = self.job_configs[offset: offset + number]
     the_first_job_config = ret[0]
