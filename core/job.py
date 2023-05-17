@@ -10,6 +10,7 @@ class Job(object):
   idx = 0
   def __init__(self, env, job_config, raw_id):
     self.env = env
+    self.cluster = None
     
     if raw_id:
       self.id = job_config.id
@@ -22,6 +23,7 @@ class Job(object):
     # self.local_memory = min(self.memory, compute_node_memory_capacity)
     # self.remote_memory = max(0, self.memory - compute_node_memory_capacity)
     self.duration = job_config.duration
+    self.slowdown = 1
 
     self.allocated_nodes = None
     self.allocated_memory_nodes = None
@@ -32,12 +34,16 @@ class Job(object):
     self.finished = False
     self.finished_timestamp = None
     Job.idx += 1
+    
+  def attach(self, cluster):
+    self.cluster = cluster
 
   def do_work(self):
     yield self.env.timeout(self.duration)
     self.finished = True
     self.finished_timestamp = self.env.now
-    print(f'Job {self.id} finishes @: {self.env.now}')
+    if self.cluster.job_status == True:
+      print(f'Job {self.id} finishs time: {self.env.now}')
 
     for node in self.allocated_nodes:
       node.stop_job(self)
@@ -51,7 +57,8 @@ class Job(object):
   def start(self, nodes, memory_nodes):
     self.started = True
     self.started_timestamp = self.env.now
-    print(f'Job {self.id} starts @: {self.started_timestamp}')
+    if self.cluster.job_status == True:
+      print(f'Job {self.id} starts time: {self.started_timestamp}')
 
     self.allocated_nodes = nodes
     for node in self.allocated_nodes:

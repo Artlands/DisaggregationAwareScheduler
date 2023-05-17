@@ -1,17 +1,35 @@
 import operator
+from core.node import NodeConfig
 from core.rack import Rack
 
 
 class Cluster(object):
-  def __init__(self, status):
-    self.disaggregation = False
-    self.status = status
+  def __init__(self, cluster_config):
+    print(f'Initializing cluster')
     self.racks = []
     self.jobs = []
     self.failed_jobs = []
+    self.node_status = cluster_config.node_status
+    self.job_status = cluster_config.job_status
+    total_racks = cluster_config.total_racks
+    compute_nodes_per_rack = cluster_config.compute_nodes_per_rack
+    memory_nodes_per_rack = cluster_config.memory_nodes_per_rack
+    compute_node_memory_capacity = cluster_config.compute_node_memory_capacity
+    memory_node_memory_capacity = cluster_config.memory_node_memory_capacity
+    memory_granularity = cluster_config.memory_granularity
+    
+    for _ in range(total_racks):
+      node_configs = []
+      for c in range(compute_nodes_per_rack):
+        node_configs.append(NodeConfig(compute_node_memory_capacity, 'compute'))
+      for m in range(memory_nodes_per_rack):
+        node_configs.append(NodeConfig(memory_node_memory_capacity, 'memory'))
+
+      rack = Rack()
+      self.add_rack(rack)
+      rack.add_nodes(node_configs, memory_granularity)
   
   def add_rack(self, rack):
-    # print(f'# of racks: {len(racks)}')
     self.racks.append(rack)
     rack.attach(self)
 
@@ -23,9 +41,6 @@ class Cluster(object):
       'job': job,
       'reason': reason
     })
-    
-  def set_disaggregation(self, disaggregation):
-    self.disaggregation = disaggregation
 
   def find_rack(self, rack_id):
     for rack in self.racks:
@@ -43,10 +58,6 @@ class Cluster(object):
   @property
   def memory_node_memory_capacity(self):
     return self.racks[0].memory_nodes[0].memory_capacity
-  
-  @property
-  def memory_granularity(self):
-    return self.racks[0].compute_nodes[0].memory_granularity
 
   @property
   def total_compute_nodes(self):
@@ -157,6 +168,7 @@ class Cluster(object):
         'nnodes': int(job.nnodes),
         'memory': int(job.memory),
         'duration': int(job.duration),
+        'slowdown': job.slowdown,
         'failed': False,
         'reason': None
       }
@@ -171,6 +183,7 @@ class Cluster(object):
         'nnodes': int(job.nnodes),
         'memory': int(job.memory),
         'duration': 0,
+        'slowdown': 1,
         'failed': True,
         'reason': reasone
       }

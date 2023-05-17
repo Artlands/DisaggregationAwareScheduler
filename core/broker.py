@@ -5,6 +5,7 @@ from core.job import Job
 class Broker(object):
   job_cls = Job
   def __init__(self, env, jobs_configs, raw_id = True):
+    print(f'Initializing job broker')
     self.env = env
     self.simulation = None
     self.cluster = None
@@ -21,7 +22,10 @@ class Broker(object):
       assert job_config.submit >=self.env.now
       yield self.env.timeout(job_config.submit - self.env.now)
       job = Broker.job_cls(self.env, job_config, self.raw_id)
-      print(f'Job {job.id} submit time: {self.env.now}, nnode: {job.nnodes}, memory: {job.memory}')
+      job.attach(self.cluster)
+      
+      if self.cluster.job_status == True:
+        print(f'Job {job.id} submits time: {self.env.now}, nnode: {job.nnodes}, memory: {job.memory}')
       
       # Check if job requests more nodes than the cluster has
       if job.nnodes > len(self.cluster.total_compute_nodes):
@@ -42,6 +46,5 @@ class Broker(object):
               self.cluster.add_failed_jobs(job, 'out-of-memory')
         else:
           self.cluster.add_job(job)
-          
       
     self.destroyed = True

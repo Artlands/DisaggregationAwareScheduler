@@ -39,14 +39,14 @@ class ComputeNode(Node):
     self.job = None
 
   def run_job(self, job):
-    if self.cluster.status == True:
+    if self.cluster.node_status == True:
       print(f'Compute Node [{self.rack.id}] {self.id} runs Job {job.id}')
     self.allocated_memory += self.resource_round_up(min(job.memory, self.memory_capacity))
     self.allocated = True
     self.job = job
 
   def stop_job(self, job):
-    if self.cluster.status == True:
+    if self.cluster.node_status == True:
       print(f'Compute Node [{self.rack.id}] {self.id} stops Job {job.id}')
     self.allocated_memory -= self.resource_round_up(min(job.memory, self.memory_capacity))
     self.allocated = False

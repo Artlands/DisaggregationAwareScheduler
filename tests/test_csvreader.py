@@ -1,4 +1,4 @@
-from utils.csv_reader import CSVReader
+from utils.config_reader import CSVReader
 
 def test_csvreader():
   jobs_csv = './job_configs.csv'

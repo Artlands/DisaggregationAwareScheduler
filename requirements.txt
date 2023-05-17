@@ -1,2 +1,5 @@
 simpy
+scipy
+pandas
+pyyaml
 pytest

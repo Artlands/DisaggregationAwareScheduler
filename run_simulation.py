@@ -1,67 +1,31 @@
 import simpy
 
-from core.node import NodeConfig
-from core.rack import Rack
 from core.cluster import Cluster
 from core.broker import Broker
 from core.scheduler import Scheduler
 from core.simulation import Simulation
 
-from utils.csv_reader import CSVReader
-from algorithms.random import RandomAlgorithm
-from algorithms.rack_first import RackFirstAlgorithm
+from utils.config_reader import CSVReader, ClusterConfigReader
 
 
 def main():
-  # Monitoring option
-  monitor = True    # Generate monitoring files
-  status = False     # Print node status when running or stopping jobs
-  raw_id = False    # Use raw job IDs in job configurations
+  # Load cluster configuration
+  cluster_config = ClusterConfigReader('./configs/cluster_config.yaml')
   
-  # Set up files for storing the monitoring data
-  if monitor:
-    cluster_state_file = './monitoring/7d_rack_first_cluster_state_file_perlmutter.json'
-    jobs_summary_file = './monitoring/7d_rack_first_summary_file_perlmutter.json'
-  else:
-    cluster_state_file = None
-    jobs_summary_file = None
+  # Setup monitoring options
+  raw_id             = cluster_config.raw_id
+  cluster_state_file = cluster_config.cluster_state_file
+  jobs_summary_file  = cluster_config.jobs_summary_file
   
-  # Disaggregation option
-  disaggregation=True
+  # Setup algorithm
+  algorithm = cluster_config.algorithm
   
-  # Scheduling algorithm options
-  # algorithm = RandomAlgorithm()
-  algorithm = RackFirstAlgorithm()
-  
-  # Cluster configuration
-  cluster = Cluster(status)
-  cluster.set_disaggregation(disaggregation)
-  
-  total_racks = 6                     # Total number of racks
-  compute_nodes_per_rack = 230        # Number of computer nodes in each rack
-  memory_nodes_per_rack = 10           # Number of memory nodes in each rack
-  compute_node_memory_capacity = 128  # Memory capacity of the computer node (in GB)
-  memory_node_memory_capacity = 2048  # memory capacity of the memory node (in GB)
-  memory_granularity = 2              # Memory allocation granularity (in GB) 
-  
-  for _ in range(total_racks):
-    node_configs = []
-    for c in range(compute_nodes_per_rack):
-      node_configs.append(NodeConfig(compute_node_memory_capacity, 'compute'))
-    for m in range(memory_nodes_per_rack):
-      node_configs.append(NodeConfig(memory_node_memory_capacity, 'memory'))
-
-    rack = Rack()
-    cluster.add_rack(rack)
-    rack.add_nodes(node_configs, memory_granularity)
+  # Initialize cluster
+  cluster = Cluster(cluster_config)
 
   # Loading jobs
-  total_jobs = 14110
-  # total_jobs = 12138
-  jobs_csv = './configs/job_configs_7days.csv'
-  csv_reader = CSVReader(jobs_csv)
-  job_configs = csv_reader.generate()    # First parameter: starting point in the csv file
-                                                   # Second parameter: total number of job records
+  csv_reader = CSVReader('./configs/job_configs_3days.csv', cluster_config)
+  job_configs = csv_reader.generate()
 
   # Simulation environment
   env = simpy.Environment()
