@@ -130,7 +130,7 @@ dmypy.json
 
 # Experiment results and temporary python files
 # /configs
-/monitoring
+# /monitoring
 /tmp
 *.json
 *.csv
