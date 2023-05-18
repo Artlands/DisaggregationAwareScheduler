@@ -29,12 +29,12 @@ class FirstComeFirstServe(Algorithm):
           for r in racks:
             if r.number_of_free_compute_nodes >= nnodes:
               # This rack has enough free compute nodes
-              candidate_nodes = r.free_compute_nodes[:nnodes]
+              candidate_nodes.extend(r.free_compute_nodes[:nnodes])
               break
             else:
               # This rack does not have enough free compute nodes for this job,
               # allocate all free compute nodes in this rack and continue to the next rack
-              candidate_nodes = r.free_compute_nodes
+              candidate_nodes.extend(r.free_compute_nodes)
               nnodes -= r.number_of_free_compute_nodes
 
           # Do not need memory node
@@ -54,23 +54,23 @@ class FirstComeFirstServe(Algorithm):
               for r in racks:
                 if r.free_remote_memory >= job_remote_memory_round_up:
                   # This rack has enough free remote memory
-                  for m in r.memory_nodes:
-                    if m.id in memory_node_capacity_records:
-                      if memory_node_capacity_records[m.id] >= job_remote_memory_round_up:
-                        memory_node_capacity_records[m.id] -= job_remote_memory_round_up
-                        compute_memory_node_tuples.append( (c_node, m, job_remote_memory_round_up) )
+                  for m_node in r.memory_nodes:
+                    if m_node.id in memory_node_capacity_records:
+                      if memory_node_capacity_records[m_node.id] >= job_remote_memory_round_up:
+                        memory_node_capacity_records[m_node.id] -= job_remote_memory_round_up
+                        compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
                         flag = True
                         break
                     else:
-                      if m.free_memory >= job_remote_memory_round_up:
-                        memory_node_capacity_records[m.id] = m.free_memory - job_remote_memory_round_up
-                        compute_memory_node_tuples.append( (c_node, m, job_remote_memory_round_up) )
+                      if m_node.free_memory >= job_remote_memory_round_up:
+                        memory_node_capacity_records[m_node.id] = m_node.free_memory - job_remote_memory_round_up
+                        compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
                         flag = True
                         break
                   if flag == True:
                     break # break the for loop of racks
               
-              # Fail to find the memory node in all racks
+              # Fail to find the memory node for computer node(s) in all racks
               if flag == False:
                 return None, []
               

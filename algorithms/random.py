@@ -16,6 +16,7 @@ class Random(Algorithm):
     compute_memory_node_tuples = [] #(compute_node, memory_node, remote_memory)
 
     jobs.sort(key=attrgetter('submit'))
+    
     if total_free_compute_nodes and jobs:
       for job in jobs:
         # First check if the cluster has enough resources for the job

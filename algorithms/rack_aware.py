@@ -27,7 +27,8 @@ class RackAware(Algorithm):
           candidate_job = job
           candidate_nodes = []
           
-          # Do not consider rack-awarenes, randomly select candidate compute nodes
+          # For jobs do not need remote memory, 
+          # do not consider rack-awareness, randomly select candidate compute nodes
           if compute_node_memory_capacity >=job.memory:
             random.shuffle(total_free_compute_nodes)
             candidate_nodes = total_free_compute_nodes[:job.nnodes]

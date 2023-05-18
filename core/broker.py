@@ -16,6 +16,10 @@ class Broker(object):
   def attach(self, simulation):
     self.simulation = simulation
     self.cluster = simulation.cluster
+    self.memory_granularity = self.cluster.memory_granularity
+    
+  def resource_round_up(self, x):
+    return self.memory_granularity * (int(math.ceil(x/self.memory_granularity)))
 
   def run(self):
     for job_config in self.jobs_configs:
@@ -35,8 +39,9 @@ class Broker(object):
         if job.memory > self.cluster.compute_node_memory_capacity:
           if self.cluster.disaggregation:
             remote_memory = job.memory - self.cluster.compute_node_memory_capacity
+            remote_memory_round_up = self.resource_round_up(remote_memory)
             memory_node_memory_capacity = self.cluster.memory_node_memory_capacity
-            memory_units_supported_per_node = int(math.floor(memory_node_memory_capacity/remote_memory))
+            memory_units_supported_per_node = int(math.floor(memory_node_memory_capacity/remote_memory_round_up))
             memory_units_supported = memory_units_supported_per_node * (len(self.cluster.total_memory_nodes))
             if memory_units_supported >= job.nnodes:
               self.cluster.add_job(job)

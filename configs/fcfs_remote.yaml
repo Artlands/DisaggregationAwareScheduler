@@ -1,18 +1,18 @@
 # Monitoring options
 monitor: true               # generate monitoring files
-node_status: true          # print node status when running jobs
-job_status: true            # print job status when running or stopping jobs
-raw_id: true                # use raw job IDs in job configurations
+node_status: false          # print node status when running jobs
+job_status: false            # print job status when running or stopping jobs
+raw_id: false                # use raw job IDs in job configurations
 
 # disaggregation option
-disaggregation: false
+disaggregation: true
 
 # Cluster configurations
 racks: 6                    # total number of racks
-compute_nodes: 240          # number of compute nodes in each rack
-memory_nodes: 0             # number of memory nodes in each rack
-compute_node_capacity: 512  # memory capacity of the compute node (in GB)
-memory_node_capacity: 0     # memory capacity of the memory node (in GB)
+compute_nodes: 220          # number of compute nodes in each rack
+memory_nodes: 20             # number of memory nodes in each rack
+compute_node_capacity: 256  # memory capacity of the compute node (in GB)
+memory_node_capacity: 2048     # memory capacity of the memory node (in GB)
 memory_granularity: 2       # memory allocation granularity (in GB)
 
 # Jobs configuration
