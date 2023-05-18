@@ -11,23 +11,24 @@ class Cluster(object):
     self.failed_jobs = []
     self.node_status = cluster_config.node_status
     self.job_status = cluster_config.job_status
-    total_racks = cluster_config.total_racks
-    compute_nodes_per_rack = cluster_config.compute_nodes_per_rack
-    memory_nodes_per_rack = cluster_config.memory_nodes_per_rack
-    compute_node_memory_capacity = cluster_config.compute_node_memory_capacity
-    memory_node_memory_capacity = cluster_config.memory_node_memory_capacity
-    memory_granularity = cluster_config.memory_granularity
+    self.disaggregation = cluster_config.disaggregation
+    self.total_racks = cluster_config.total_racks
+    self.compute_nodes_per_rack = cluster_config.compute_nodes_per_rack
+    self.memory_nodes_per_rack = cluster_config.memory_nodes_per_rack
+    self.compute_node_memory_capacity = cluster_config.compute_node_memory_capacity
+    self.memory_node_memory_capacity = cluster_config.memory_node_memory_capacity
+    self.memory_granularity = cluster_config.memory_granularity
     
-    for _ in range(total_racks):
+    for _ in range(self.total_racks):
       node_configs = []
-      for c in range(compute_nodes_per_rack):
-        node_configs.append(NodeConfig(compute_node_memory_capacity, 'compute'))
-      for m in range(memory_nodes_per_rack):
-        node_configs.append(NodeConfig(memory_node_memory_capacity, 'memory'))
+      for c in range(self.compute_nodes_per_rack):
+        node_configs.append(NodeConfig(self.compute_node_memory_capacity, 'compute'))
+      for m in range(self.memory_nodes_per_rack):
+        node_configs.append(NodeConfig(self.memory_node_memory_capacity, 'memory'))
 
       rack = Rack()
       self.add_rack(rack)
-      rack.add_nodes(node_configs, memory_granularity)
+      rack.add_nodes(node_configs, self.memory_granularity)
   
   def add_rack(self, rack):
     self.racks.append(rack)
@@ -50,14 +51,6 @@ class Cluster(object):
 
   def accommodate(self, job):
     return len(self.total_free_compute_nodes) >= job.nnodes
-
-  @property
-  def compute_node_memory_capacity(self):
-    return self.racks[0].compute_nodes[0].memory_capacity
-  
-  @property
-  def memory_node_memory_capacity(self):
-    return self.racks[0].memory_nodes[0].memory_capacity
 
   @property
   def total_compute_nodes(self):

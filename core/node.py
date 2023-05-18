@@ -60,13 +60,13 @@ class MemoryNode(Node):
     self.jobs = []
 
   def allocate_memory(self, job, remote_memory):
-    if self.cluster.status == True:
+    if self.cluster.node_status == True:
       print(f'Memory Node [{self.rack.id}] {self.id} allocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
     self.allocated_memory += self.resource_round_up(remote_memory)
     self.jobs.append(job)
 
   def deallocate_memory(self, job, remote_memory):
-    if self.cluster.status == True:
+    if self.cluster.node_status == True:
       print(f'Memory Node [{self.rack.id}] {self.id} deallocates remote memory {self.resource_round_up(remote_memory)} GB for Job {job.id}')
     self.allocated_memory -= self.resource_round_up(remote_memory)
     self.jobs.remove(job)

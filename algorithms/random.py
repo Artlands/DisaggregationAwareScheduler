@@ -4,7 +4,7 @@ from operator import attrgetter
 from core.algorithm import Algorithm
 
 
-class DisaggregationRandomAlgorithm(Algorithm):
+class Random(Algorithm):
   def __call__(self, cluster, clock):
     total_free_compute_nodes = cluster.total_free_compute_nodes
     total_memory_nodes = cluster.total_memory_nodes
@@ -18,7 +18,7 @@ class DisaggregationRandomAlgorithm(Algorithm):
     jobs.sort(key=attrgetter('submit'))
     if total_free_compute_nodes and jobs:
       for job in jobs:
-        # First check if the cluster has enough resrouces for the job
+        # First check if the cluster has enough resources for the job
         if cluster.accommodate(job):
           random.shuffle(total_free_compute_nodes)
           candidate_nodes = total_free_compute_nodes[:job.nnodes]
@@ -57,7 +57,7 @@ class DisaggregationRandomAlgorithm(Algorithm):
               if flag == False:
                 return None, []
               
-          # all compute nodes should find their memory nodes
+          # all compute nodes should find memory resources from their corresponding memory nodes
           return candidate_job, compute_memory_node_tuples
         # Cannot accommodate the job
         return None, []

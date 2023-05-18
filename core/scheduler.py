@@ -41,19 +41,22 @@ class Scheduler(object):
         else:
           memory_nodes_dict[m_node.id] = {'memory_node': m_node, 'remote_memory': remote_memory}
       
-        # Calculate distance and keep the max distance
+        # Calculate distance, if the compute node and memory node are not in the same rack, distance is 1
         c_node_rack = c_node.rack.id
         m_node_rack = m_node.rack.id
-        dis_tmp += abs(c_node_rack - m_node_rack)
-        distance = max(dis_tmp, distance)
+        if(c_node_rack != m_node_rack):
+          distance = 1
+        # dis_tmp += abs(c_node_rack - m_node_rack)
+        # distance = max(dis_tmp, distance)
     
     memory_nodes = list(memory_nodes_dict.values())
     
     if memory_nodes:
       # Remote memory ratio, the larger the greater slowdown
       rm_ratio = 1 - self.cluster.compute_node_memory_capacity/job.memory
-      # Distance ratio, the larger the greater slowdown
-      ds_ratio = distance/(len(self.cluster.racks) - 1)
+      # Distance ratio, the larger the greater slowdowns
+      ds_ratio = distance
+      # ds_ratio = distance/(len(self.cluster.racks) - 1)
       
       base_slowdown = self.get_truncated_normal().rvs()
       

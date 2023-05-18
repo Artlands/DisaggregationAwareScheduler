@@ -1,4 +1,5 @@
 import simpy
+import argparse
 
 from core.cluster import Cluster
 from core.broker import Broker
@@ -9,8 +10,17 @@ from utils.config_reader import CSVReader, ClusterConfigReader
 
 
 def main():
+  # Parse arguments
+  parser = argparse.ArgumentParser(description='Run simulation by specifying configuration files')
+  parser.add_argument('--cluster_config', metavar='cluster_config.yaml', type=str, help='simulation configuration file')
+  parser.add_argument('--job_config', metavar='job_config.csv', type=str, help='job configuration file')
+  args = parser.parse_args()
+  
   # Load cluster configuration
-  cluster_config = ClusterConfigReader('./configs/cluster_config.yaml')
+  if args.cluster_config:
+    cluster_config = ClusterConfigReader(f'./configs/{args.cluster_config}')
+  else:
+    cluster_config = ClusterConfigReader('./configs/cluster_config.yaml')
   
   # Setup monitoring options
   raw_id             = cluster_config.raw_id
@@ -24,7 +34,10 @@ def main():
   cluster = Cluster(cluster_config)
 
   # Loading jobs
-  csv_reader = CSVReader('./configs/job_configs_3days.csv', cluster_config)
+  if args.job_config:
+    csv_reader = CSVReader(f'./configs/{args.job_config}', cluster_config)
+  else:
+    csv_reader = CSVReader('./configs/job_configs_3days.csv', cluster_config)
   job_configs = csv_reader.generate()
 
   # Simulation environment

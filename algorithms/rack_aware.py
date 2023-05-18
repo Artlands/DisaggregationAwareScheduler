@@ -4,7 +4,7 @@ from operator import attrgetter
 from core.algorithm import Algorithm
 
 
-class DisaggregationRackFirstAlgorithm(Algorithm):
+class RackAware(Algorithm):
   def __call__(self, cluster, clock):
     total_free_compute_nodes = cluster.total_free_compute_nodes
     compute_node_memory_capacity = cluster.compute_node_memory_capacity
@@ -22,7 +22,7 @@ class DisaggregationRackFirstAlgorithm(Algorithm):
     
     if total_free_compute_nodes and jobs:
       for job in jobs:
-        # First check if the cluster has enough resrouces for the job
+        # First check if the cluster has enough resources for the job
         if cluster.accommodate(job):
           candidate_job = job
           candidate_nodes = []

@@ -2,9 +2,9 @@ import yaml
 import pandas as pd
 from operator import attrgetter
 from core.job import JobConfig
-from algorithms.fcfs import FirstComeFirstServeAlgorithm
-from algorithms.disaggregation_random import DisaggregationRandomAlgorithm
-from algorithms.disaggregation_rack_first import DisaggregationRackFirstAlgorithm
+from algorithms.fcfs import FirstComeFirstServe
+from algorithms.random import Random
+from algorithms.rack_aware import RackAware
 
 
 class CSVReader(object):
@@ -52,7 +52,6 @@ class CSVReader(object):
 
     return ret
   
-
 class ClusterConfigReader(object):
   def __init__(self, filename):
     print(f'Loading cluster configuration from {filename}')
@@ -72,7 +71,7 @@ class ClusterConfigReader(object):
     self.memory_node_memory_capacity = 512          # memory capacity of the compute node (in GB)
     self.compute_node_memory_capacity = 0           # memory capacity of the memory node (in GB)
     self.memory_granularity = 2                     # memory allocation granularity (in GB)
-    self.algorithm = FirstComeFirstServeAlgorithm() # default scheduler algorithm
+    self.algorithm = FirstComeFirstServe() # default scheduler algorithm
     
     with open(self.filename, 'r') as f:
       try:
@@ -118,39 +117,51 @@ class ClusterConfigReader(object):
       
     # Sanity check
     if self.disaggregation:
-      assert self.memory_nodes > 0, 'Disaggregation option is enabled, but the number of memory nodes is 0.'
-      assert self.memory_node_capacity > 0, 'Disaggregation option is enabled, but the memory node capacity is 0.'
-      assert self.memory_granularity > 0, 'Disaggregation option is enabled, but the memory granularity is 0.'
+      try:
+        assert self.memory_nodes_per_rack > 0, 'Disaggregation option is enabled, but the number of memory nodes is 0.'
+        assert self.memory_node_memory_capacity > 0, 'Disaggregation option is enabled, but the memory node capacity is 0.'
+        assert self.memory_granularity > 0, 'Disaggregation option is enabled, but the memory granularity is 0.'
+      except AssertionError as e:
+        print(e)
+        exit(1)
 
     # load algorithm
     if 'algorithm' in self.config:
       if self.config['algorithm'] == 'fcfs':
-        self.algorithm = FirstComeFirstServeAlgorithm()
+        self.algorithm = FirstComeFirstServe()
       elif self.config['algorithm'] == 'random':
-        self.algorithm = DisaggregationRandomAlgorithm()
+        self.algorithm = Random()
       elif self.config['algorithm'] == 'rack_aware':
-        self.algorithm = DisaggregationRackFirstAlgorithm()
+        self.algorithm = RackAware()
+      else:
+        print('Invalid algorithm name. Please choose from fcfs, random, or rack_aware.')
+        exit(1)
         
     # update monitoring option
     if 'monitor' in self.config:
       self.monitor = self.config['monitor']
       
-    if self.monitor:
-      self.cluster_state_file = "./monitoring/cluster_state_" \
-                              + "C" + str(self.compute_nodes_per_rack)  \
-                              + "-" + str(self.compute_node_memory_capacity) + "GB_" \
-                              + "M" + str(self.memory_nodes_per_rack) \
-                              + "-" + str(self.memory_node_memory_capacity) + "GB_"\
-                              + self.config['algorithm'] + ".json"
-      self.jobs_summary_file = "./monitoring/job_summary_" \
-                              + "C" + str(self.compute_nodes_per_rack)  \
-                              + "-" + str(self.compute_node_memory_capacity) + "GB_" \
-                              + "M" + str(self.memory_nodes_per_rack) \
-                              + "-" + str(self.memory_node_memory_capacity) + "GB_"\
-                              + self.config['algorithm'] + ".json"
-                              
     # update offset and number
     if 'offset' in self.config:
       self.offset = self.config['offset']
     if 'number' in self.config:
       self.number = self.config['number']
+      
+    if self.monitor:
+      self.cluster_state_file = "./monitoring/cluster_state_" \
+                              + "J" + str(self.offset) \
+                              + "-" + str(self.number) \
+                              + "_C" + str(self.compute_nodes_per_rack)  \
+                              + "-" + str(self.compute_node_memory_capacity) + "GB_" \
+                              + "M" + str(self.memory_nodes_per_rack) \
+                              + "-" + str(self.memory_node_memory_capacity) + "GB_"\
+                              + self.config['algorithm'] + ".json"
+      self.jobs_summary_file = "./monitoring/job_summary_" \
+                              + "J" + str(self.offset) \
+                              + "-" + str(self.number) \
+                              + "_C" + str(self.compute_nodes_per_rack)  \
+                              + "-" + str(self.compute_node_memory_capacity) + "GB_" \
+                              + "M" + str(self.memory_nodes_per_rack) \
+                              + "-" + str(self.memory_node_memory_capacity) + "GB_"\
+                              + self.config['algorithm'] + ".json"
+          
