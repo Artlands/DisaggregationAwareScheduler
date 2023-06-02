@@ -131,8 +131,11 @@ dmypy.json
 # Experiment results and temporary python files
 # /configs
 # /monitoring
+/__pycache__
 /tmp
 *.json
 *.csv
 tmp*.py
 *.ipynb
+*.png
+*.yaml

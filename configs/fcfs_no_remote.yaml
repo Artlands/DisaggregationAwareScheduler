@@ -17,7 +17,7 @@ memory_granularity: 2       # memory allocation granularity (in GB)
 
 # Jobs configuration
 offset: 0                   # offset in the job configuration file
-number: 100                  # number of jobs to be loaded. Load all jobs if set to zero
+number: 0                  # number of jobs to be loaded. Load all jobs if set to zero
 
 # Scheduler algorithms  
 algorithm: "fcfs"           # Supported algorithms: fcfs, random, rack_aware

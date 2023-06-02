@@ -23,7 +23,7 @@ class Job(object):
     # self.local_memory = min(self.memory, compute_node_memory_capacity)
     # self.remote_memory = max(0, self.memory - compute_node_memory_capacity)
     self.duration = job_config.duration
-    self.slowdown = 1
+    self.slowdown = 0
 
     self.allocated_nodes = None
     self.allocated_memory_nodes = None

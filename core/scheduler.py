@@ -26,11 +26,11 @@ class Scheduler(object):
         
   def performance_slowdown(self, job, compute_memory_node_tuples):
     # Model the performance slowdown based on ratio of remote memory and the distance of the allocated compute nodes to the memory nodes.
-    slowdown = 1
+    slowdown = 0
     distance = 0
     compute_nodes = []
     memory_nodes = []      # {'memory_node': MemoryNode, 'remote_memory': memory_allocated}
-    memory_nodes_dict = {} # { 'memory_node_id': {'memory_node': MemoryNode, 'remote_memory': memory_allocated} }
+    memory_nodes_dict = {} # {'memory_node_id': {'memory_node': MemoryNode, 'remote_memory': memory_allocated} }
     for (c_node, m_node, remote_memory) in compute_memory_node_tuples:
       compute_nodes.append(c_node)
       # Aggregate remote memory
@@ -45,7 +45,7 @@ class Scheduler(object):
         # distance is 1, otherwise distance is 2
         c_node_rack = c_node.rack.id
         m_node_rack = m_node.rack.id
-        if(c_node_rack != m_node_rack):
+        if(c_node_rack == m_node_rack):
           distance = 1
         else:
           distance = 2
@@ -58,20 +58,25 @@ class Scheduler(object):
       # Distance ratio, the larger the greater slowdowns
       ds_ratio = distance
       
-      base_slowdown = self.get_truncated_normal().rvs()
+      base_slowdown = self.get_truncated_normal()
       
       # Calculate slowdown based on remote memory radio and distance ratio
       slowdown = round(base_slowdown * ds_ratio * (1 + rm_ratio), 2)
-      job.slowdown = slowdown
     
-    # Adjust job duration
+    # Adjust job duration and slowdown
+    job.slowdown = slowdown
     job.duration = int(job.duration * (slowdown + 1))
     
     return compute_nodes, memory_nodes
   
   def get_truncated_normal(self, mean=0.25, sd=0.1, low=0, upp=0.5):
-    return truncnorm(
-        (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
+    # return truncnorm(
+    #     (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
+    number = random.normalvariate(mean, sd)
+    while number < low or number > upp:
+      number = random.normalvariate(mean, sd)
+    return number
+  
 
   def run(self):
     while not self.simulation.finished:

@@ -12,12 +12,12 @@ racks: 6                    # total number of racks
 compute_nodes: 220          # number of compute nodes in each rack
 memory_nodes: 20             # number of memory nodes in each rack
 compute_node_capacity: 256  # memory capacity of the compute node (in GB)
-memory_node_capacity: 2048     # memory capacity of the memory node (in GB)
+memory_node_capacity: 1024     # memory capacity of the memory node (in GB)
 memory_granularity: 2       # memory allocation granularity (in GB)
 
 # Jobs configuration
 offset: 0                   # offset in the job configuration file
-number: 100                  # number of jobs to be loaded. Load all jobs if set to zero
+number: 0                  # number of jobs to be loaded. Load all jobs if set to zero
 
 # Scheduler algorithms  
 algorithm: "rack_aware"           # Supported algorithms: fcfs, random, rack_aware
