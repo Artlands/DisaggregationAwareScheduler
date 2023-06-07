@@ -1,10 +1,11 @@
 class JobConfig(object):
-  def __init__(self, jobid, submit, nnodes, max_node_memory, duration):
+  def __init__(self, jobid, submit, nnodes, max_node_memory, duration, priority):
     self.id = jobid
     self.submit = submit
     self.nnodes = nnodes
     self.memory = max_node_memory
     self.duration = duration
+    self.priority = priority
 
 class Job(object):
   idx = 0
@@ -23,6 +24,7 @@ class Job(object):
     # self.local_memory = min(self.memory, compute_node_memory_capacity)
     # self.remote_memory = max(0, self.memory - compute_node_memory_capacity)
     self.duration = job_config.duration
+    self.priority = job_config.priority
     self.slowdown = 0
 
     self.allocated_nodes = None
@@ -30,9 +32,11 @@ class Job(object):
     self.process = None
 
     self.started = False
-    self.started_timestamp = None
+    self.started_timestamp = 0
     self.finished = False
-    self.finished_timestamp = None
+    self.finished_timestamp = 0
+    self.failed = False
+    self.failed_timestamp = 0
     Job.idx += 1
     
   def attach(self, cluster):
@@ -53,6 +57,15 @@ class Job(object):
         memory_node = remote_memory_record['memory_node']
         remote_memory = remote_memory_record['remote_memory']
         memory_node.deallocate_memory(self, remote_memory)
+        
+  def fail(self):
+    self.failed = True
+    self.failed_timestamp = self.env.now
+    if self.cluster.job_status == True:
+      print(f'Job {self.id} fails time: {self.env.now}')
+    # Remote this job from the cluster job list
+    self.cluster.remove_job(self)
+    
 
   def start(self, nodes, memory_nodes):
     self.started = True

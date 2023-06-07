@@ -37,6 +37,10 @@ class Cluster(object):
   def add_job(self, job):
     self.jobs.append(job)
     
+  def remove_job(self, job):
+    if job in self.jobs:
+      self.jobs.remove(job)
+    
   def add_failed_jobs(self, job, reason):
     self.failed_jobs.append({
       'job': job,
@@ -108,7 +112,7 @@ class Cluster(object):
   def unfinished_jobs(self):
     ls = []
     for job in self.jobs:
-      if not job.finished:
+      if not job.finished and not job.failed:
         ls.append(job)
     ls.sort(key=operator.attrgetter('id'))
     return ls
@@ -125,7 +129,7 @@ class Cluster(object):
   def jobs_in_waiting_queue(self):
     ls = []
     for job in self.jobs:
-      if not job.started:
+      if not job.started and not job.failed:
         ls.append(job)
     ls.sort(key=operator.attrgetter('submit'))
     return ls

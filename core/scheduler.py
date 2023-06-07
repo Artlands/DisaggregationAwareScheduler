@@ -17,7 +17,8 @@ class Scheduler(object):
   def make_decision(self):
     while True:
       job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now)
-      if (len(compute_memory_node_tuples) == 0) or (job == None):
+      if (job == None):
+        # print(f'No job to schedule')
         break
       else:
         # Calculate performance slowdown

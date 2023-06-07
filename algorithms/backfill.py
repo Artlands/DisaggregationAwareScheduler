@@ -1,9 +1,9 @@
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import rack_awared_allocation
+from algorithms.common import load_balance_allocation
 
 
-class RackAware(Algorithm):
+class Backfill(Algorithm):
   def __call__(self, cluster, clock):
     jobs = cluster.jobs_in_waiting_queue
 
@@ -12,7 +12,7 @@ class RackAware(Algorithm):
     if(len(jobs) == 0):
       return None, []
     else:
-      job, compute_memory_node_tuples = rack_awared_allocation(jobs[0], cluster)
+      job, compute_memory_node_tuples = load_balance_allocation(jobs[0], cluster)
     
     if (job != None):
       return job, compute_memory_node_tuples
@@ -20,7 +20,9 @@ class RackAware(Algorithm):
       # Try to find small jobs that may be able to run
       jobs.sort(key=attrgetter('nnodes'))
       for job in jobs:
-        job, compute_memory_node_tuples = rack_awared_allocation(job, cluster)
+        job, compute_memory_node_tuples = load_balance_allocation(job, cluster)
         if (job != None):
           return job, compute_memory_node_tuples
       return None, []
+        
+    
