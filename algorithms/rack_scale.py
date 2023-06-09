@@ -1,18 +1,17 @@
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import rack_scale_allocation, backfill_plan
 
 
-class ShortestJobFirst(Algorithm):
+class RackScale(Algorithm):
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
-    
-    # Sort jobs by duration
-    jobs.sort(key=attrgetter('duration'))
+
+    jobs.sort(key=attrgetter('submit'))
     if(len(jobs) == 0):
       return None, []
     else:
-      job, compute_memory_node_tuples = load_balance_allocation(jobs[0], cluster)
+      job, compute_memory_node_tuples = rack_scale_allocation(jobs[0], cluster)
     
     if (job != None):
       return job, compute_memory_node_tuples
@@ -22,8 +21,7 @@ class ShortestJobFirst(Algorithm):
         if(len(jobs) >= 2):
           job = backfill_plan(jobs[0], jobs[1:], cluster, clock)
           if(job != None):
-            job, compute_memory_node_tuples = load_balance_allocation(job, cluster)
+            job, compute_memory_node_tuples = rack_scale_allocation(job, cluster)
             if(job != None):
               return job, compute_memory_node_tuples
       return None, []
-    

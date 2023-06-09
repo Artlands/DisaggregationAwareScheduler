@@ -1,4 +1,5 @@
 import math
+import operator
 from operator import attrgetter
 
 
@@ -6,6 +7,8 @@ def load_balance_allocation(job, cluster):
   cnode_memory_capacity = cluster.compute_node_memory_capacity
   memory_granularity = cluster.memory_granularity
   compute_memory_node_tuples = [] #(compute_node, memory_node, remote_memory_capacity)
+  cross_rack_allocation_count = 0
+  cross_rack_allocation_capacity = 0
   
   racks = cluster.racks
   
@@ -14,7 +17,8 @@ def load_balance_allocation(job, cluster):
     candidate_nodes = []
     nnodes = job.nnodes
     
-    # Step 1: allocate compute nodes from racks with less load
+    # Step 1: allocate compute nodes from racks with less load. This allocation
+    # strategy is try to condense the allocated compute nodes in as few racks as possible.
     racks.sort(key=attrgetter('number_of_free_compute_nodes'), reverse=True)
     for r in racks:
       if r.number_of_free_compute_nodes >= nnodes:
@@ -40,45 +44,51 @@ def load_balance_allocation(job, cluster):
       # Find remote memory
       job_remote_memory = job.memory - cnode_memory_capacity
       job_remote_memory_round_up = resource_round_up(memory_granularity, job_remote_memory)
-      memory_node_capacity_records = {} # {Key: memory_node_id, Value: memory_node_free_memory}
       
-      # For each compute node, find a memory node for it. 
-      # Again we should allocate memory nodes with less load first.
-      total_mnodes = cluster.total_memory_nodes
-      total_mnodes.sort(key=attrgetter('free_memory'), reverse=True)
+      # Keep a record of the free memory of each memory node
+      memory_node_capacity_records = [] # [(memory_node_id, memory_node_free_memory)]
+      for m_node in cluster.total_memory_nodes:
+        memory_node_capacity_records.append( (m_node.id, m_node.free_memory) )
+        
+      # Sort the memory nodes by free memory in descending order
+      memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
       
       for c_node in candidate_nodes:
+        c_node_rack_id = c_node.rack.id
         flag = False
-        for m_node in total_mnodes:
-          if m_node.id in memory_node_capacity_records:
-            if memory_node_capacity_records[m_node.id] >= job_remote_memory_round_up:
-              memory_node_capacity_records[m_node.id] -= job_remote_memory_round_up
-              compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-              flag = True
-              break
-          else:
-            if m_node.free_memory >= job_remote_memory_round_up:
-              memory_node_capacity_records[m_node.id] = m_node.free_memory - job_remote_memory_round_up
-              compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-              flag = True
-              break
+        for i, (m_node_id, m_node_free_memory) in enumerate(memory_node_capacity_records):
+          if m_node_free_memory >= job_remote_memory_round_up:
+            memory_node_capacity_records[i] = (m_node_id, m_node_free_memory - job_remote_memory_round_up)
+            m_node = cluster.find_memory_node(m_node_id)
+            compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
+            # Reorder the memory nodes by free memory in descending order
+            memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
+            if(c_node_rack_id != m_node_id):
+              cross_rack_allocation_count += 1
+              cross_rack_allocation_capacity += job_remote_memory_round_up
+            flag = True
+            break            
+
         # Fail to find the memory node for computer node(s) in all memory nodes
-        # This job cannot be accommodated now.
+        # This job cannot be allocated now.
         if flag == False:
           return None, []
         
-      # all compute nodes should find memory resources from their corresponding memory nodes
+      # At this point, all compute nodes should find memory resources from their corresponding memory nodes
+      # Update the cross rack allocation statistics
+      job.add_statistic(cross_rack_allocation_count, cross_rack_allocation_capacity)
       return job, compute_memory_node_tuples
             
-  # Cannot accommodate the job
+  # Cannot accommodate the job because of the lack of compute nodes
   return None, []
 
 
-def rack_awared_allocation(job, cluster):
+def system_scale_allocation(job, cluster):
   cnode_memory_capacity = cluster.compute_node_memory_capacity
   memory_granularity = cluster.memory_granularity
   compute_memory_node_tuples = [] #(compute_node, memory_node, remote_memory_capacity)
-  
+  cross_rack_allocation_count = 0
+  cross_rack_allocation_capacity = 0
   racks = cluster.racks
   
   # First check if the cluster has enough compute nodes for the job
@@ -86,7 +96,8 @@ def rack_awared_allocation(job, cluster):
     candidate_nodes = []
     nnodes = job.nnodes
     
-    # Step 1: allocate compute nodes from racks with less load
+    # Step 1: allocate compute nodes from racks with less load. This allocation
+    # strategy is try to condense the allocated compute nodes in as few racks as possible.
     racks.sort(key=attrgetter('number_of_free_compute_nodes'), reverse=True)
     for r in racks:
       if r.number_of_free_compute_nodes >= nnodes:
@@ -112,62 +123,68 @@ def rack_awared_allocation(job, cluster):
       # Find remote memory
       job_remote_memory = job.memory - cnode_memory_capacity
       job_remote_memory_round_up = resource_round_up(memory_granularity, job_remote_memory)
-      memory_node_capacity_records = {} # {Key: memory_node_id, Value: memory_node_free_memory}
       
+      # Keep a record of the free memory of each memory node
+      memory_node_capacity_records = {} # {Key: rack_id, Value: [(memory_node_id, memory_node_free_memory)]}
+      for r in racks:
+        rack_memory_node_capacity_records = [] # [(memory_node_id, memory_node_free_memory)]
+        for m_node in r.memory_nodes:
+          rack_memory_node_capacity_records.append( (m_node.id, m_node.free_memory) )
+        # Sort the memory nodes by free memory in descending order
+        rack_memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
+        memory_node_capacity_records[r.id] = rack_memory_node_capacity_records
+        
       # For each compute node, find a memory node for it
       # We should allocate memory nodes close to compute nodes first.
       for c_node in candidate_nodes:
-        c_node_rack = c_node.rack
-        m_nodes = c_node_rack.memory_nodes
+        c_node_rack_id = c_node.rack.id
+        rack_memory_node_capacity_records = memory_node_capacity_records[c_node_rack_id]
         flag = False # Flag the availability of memory nodes
-        for m_node in m_nodes:
-          if m_node.id in memory_node_capacity_records:
-            if memory_node_capacity_records[m_node.id] >= job_remote_memory_round_up:
-              memory_node_capacity_records[m_node.id] -= job_remote_memory_round_up
-              compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-              flag = True
-              break # break for m_nodes loop
-          else:
-            if m_node.free_memory >= job_remote_memory_round_up:
-              memory_node_capacity_records[m_node.id] = m_node.free_memory - job_remote_memory_round_up
-              compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-              flag = True
-              break # break for m_nodes loop
+        for i, (m_node_id, m_node_free_memory) in enumerate(rack_memory_node_capacity_records):
+          if m_node_free_memory >= job_remote_memory_round_up:
+            rack_memory_node_capacity_records[i] = (m_node_id, m_node_free_memory - job_remote_memory_round_up)
+            m_node = cluster.find_memory_node(m_node_id)
+            compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
+            # Reorder the memory nodes by free memory in descending order
+            rack_memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
+            memory_node_capacity_records[r.id] = rack_memory_node_capacity_records
+            flag = True
+            break
 
         # Fail to find the memory node in the same rack, try other racks in the distance order
         if flag == False:
-          sort_racks = sort_rack_ids(c_node_rack.id, len(racks))
+          sort_racks = sort_rack_ids(c_node_rack_id, len(racks))
           for rack_id in sort_racks[1:]:
-            select_rack = cluster.find_rack(rack_id)
-            m_nodes = select_rack.memory_nodes
-            for m_node in m_nodes:
-              if m_node.id in memory_node_capacity_records:
-                if memory_node_capacity_records[m_node.id] >= job_remote_memory_round_up:
-                  memory_node_capacity_records[m_node.id] -= job_remote_memory_round_up
-                  compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-                  flag = True
-                  break # break for m_nodes loop
-              else:
-                if m_node.free_memory >= job_remote_memory_round_up:
-                  memory_node_capacity_records[m_node.id] = m_node.free_memory - job_remote_memory_round_up
-                  compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-                  flag = True
-                  break # break for m_nodes loop
+            rack_memory_node_capacity_records = memory_node_capacity_records[rack_id]
+            for i, (m_node_id, m_node_free_memory) in enumerate(rack_memory_node_capacity_records):
+              if m_node_free_memory >= job_remote_memory_round_up:
+                rack_memory_node_capacity_records[i] = (m_node_id, m_node_free_memory - job_remote_memory_round_up)
+                m_node = cluster.find_memory_node(m_node_id)
+                compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
+                # Reorder the memory nodes by free memory in descending order
+                rack_memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
+                memory_node_capacity_records[r.id] = rack_memory_node_capacity_records
+                cross_rack_allocation_count += 1
+                cross_rack_allocation_capacity += job_remote_memory_round_up
+                flag = True
+                break
             if flag == True:
-              break # break for racks loop
+              break
           
         # Fail to find the memory node in all racks
         if flag == False:
           return None, []
         
-      # all compute nodes should find their memory nodes
+      # At this point, all compute nodes should find their memory nodes
+      # Update the cross rack allocation statistics
+      job.add_statistic(cross_rack_allocation_count, cross_rack_allocation_capacity)
       return job, compute_memory_node_tuples
     
-  # Cannot accommodate the job
+  # Cannot accommodate the job because of the lack of compute nodes
   return None, []
 
 
-def rack_within_allocation(job, cluster):
+def rack_scale_allocation(job, cluster):
   cnode_memory_capacity = cluster.compute_node_memory_capacity
   memory_granularity = cluster.memory_granularity
   compute_memory_node_tuples = [] #(compute_node, memory_node, remote_memory_capacity)
@@ -179,7 +196,8 @@ def rack_within_allocation(job, cluster):
     candidate_nodes = []
     nnodes = job.nnodes
     
-    # Step 1: allocate compute nodes from racks with less load
+    # Step 1: allocate compute nodes from racks with less load. This allocation
+    # strategy is try to condense the allocated compute nodes in as few racks as possible.
     racks.sort(key=attrgetter('number_of_free_compute_nodes'), reverse=True)
     for r in racks:
       if r.number_of_free_compute_nodes >= nnodes:
@@ -205,32 +223,38 @@ def rack_within_allocation(job, cluster):
       # Find remote memory
       job_remote_memory = job.memory - cnode_memory_capacity
       job_remote_memory_round_up = resource_round_up(memory_granularity, job_remote_memory)
-      memory_node_capacity_records = {} # {Key: memory_node_id, Value: memory_node_free_memory}
+
+      # Keep a record of the free memory of each memory node
+      memory_node_capacity_records = {} # {Key: rack_id, Value: [(memory_node_id, memory_node_free_memory)]}
+      for r in racks:
+        rack_memory_node_capacity_records = [] # [(memory_node_id, memory_node_free_memory)]
+        for m_node in r.memory_nodes:
+          rack_memory_node_capacity_records.append( (m_node.id, m_node.free_memory) )
+        # Sort the memory nodes by free memory in descending order
+        rack_memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
+        memory_node_capacity_records[r.id] = rack_memory_node_capacity_records
       
       # For each compute node, find a memory node for it
       # We should allocate memory nodes within the same rack as compute nodes.
       for c_node in candidate_nodes:
-        c_node_rack = c_node.rack
-        m_nodes = c_node_rack.memory_nodes
+        c_node_rack_id = c_node.rack.id
+        rack_memory_node_capacity_records = memory_node_capacity_records[c_node_rack_id]
         flag = False # Flag the availability of memory nodes
-        for m_node in m_nodes:
-          if m_node.id in memory_node_capacity_records:
-            if memory_node_capacity_records[m_node.id] >= job_remote_memory_round_up:
-              memory_node_capacity_records[m_node.id] -= job_remote_memory_round_up
-              compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-              flag = True
-              break # break for m_nodes loop
-          else:
-            if m_node.free_memory >= job_remote_memory_round_up:
-              memory_node_capacity_records[m_node.id] = m_node.free_memory - job_remote_memory_round_up
-              compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
-              flag = True
-              break # break for m_nodes loop
+        for i, (m_node_id, m_node_free_memory) in enumerate(rack_memory_node_capacity_records):
+          if m_node_free_memory >= job_remote_memory_round_up:
+            rack_memory_node_capacity_records[i] = (m_node_id, m_node_free_memory - job_remote_memory_round_up)
+            m_node = cluster.find_memory_node(m_node_id)
+            compute_memory_node_tuples.append( (c_node, m_node, job_remote_memory_round_up) )
+            # Reorder the memory nodes by free memory in descending order
+            rack_memory_node_capacity_records.sort(key=operator.itemgetter(1), reverse=True)
+            memory_node_capacity_records[r.id] = rack_memory_node_capacity_records
+            flag = True
+            break
 
         # Fail to find the memory node in the same rack. We cannot allocate this job.
         if flag == False:
           job.fail()
-          cluster.add_failed_jobs(job, 'out-of-memory')
+          cluster.add_failed_jobs(job, 'out-of-remote-memory')
           return None, []
         
       # all compute nodes should find their memory nodes
@@ -238,6 +262,46 @@ def rack_within_allocation(job, cluster):
     
   # Cannot accommodate the job
   return None, []
+
+
+def backfill_plan(front_job, candidate_jobs, cluster, clock):
+  # This implements the EASY backfilling algorithm
+  nnodes_required = front_job.nnodes
+  running_jobs = cluster.running_jobs
+
+  jobs_time_to_completion = [] # [(job_id, time_to_completion)]
+  for job in running_jobs:
+    job_id = job.id
+    time_to_completion = job.duration - (clock - job.started_timestamp)
+    jobs_time_to_completion.append( (job_id, time_to_completion) )
+  
+  # Sort the jobs by time to completion in ascending order
+  jobs_time_to_completion.sort(key=operator.itemgetter(1))
+  
+  # Iterate through the sorted running jobs to find the available future released nodes
+  flag = False
+  total_future_released_nodes = 0
+  for job_id, time_to_completion in jobs_time_to_completion:
+    job = cluster.find_job(job_id)
+    total_future_released_nodes += job.nnodes
+    total_available_nodes = total_future_released_nodes + len(cluster.total_free_compute_nodes)
+    if(total_available_nodes >= nnodes_required):
+      # The front job can be scheduled after the earliest job(s) finish
+      flag = True
+      break
+    else:
+      # move to the next running job
+      continue
+    
+  if flag == True:
+    # The candidate job should be finished before the time to completion of the earliest job(s)
+    # Otherwise, the candidate job cannot be scheduled
+    for candidate_job in candidate_jobs:
+      if candidate_job.duration <= time_to_completion:
+        # The candidate job can be scheduled
+        return candidate_job
+  
+  return None
 
 
 def sort_rack_ids(rack_id, total_nracks):

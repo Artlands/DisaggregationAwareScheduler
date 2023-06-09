@@ -3,12 +3,12 @@ from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
 
 
-class ShortestJobFirst(Algorithm):
+class LeastAreaFirst(Algorithm):
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
     
-    # Sort jobs by duration
-    jobs.sort(key=attrgetter('duration'))
+    # Sort jobs by area (nnodes * duration)
+    jobs.sort(key=attrgetter('area'))
     if(len(jobs) == 0):
       return None, []
     else:

@@ -18,9 +18,9 @@ def main():
   
   # Load cluster configuration
   if args.cluster_config:
-    cluster_config = ClusterConfigReader(f'./configs/{args.cluster_config}')
+    cluster_config = ClusterConfigReader(f'./configs/cluster/{args.cluster_config}')
   else:
-    cluster_config = ClusterConfigReader('./configs/cluster_config.yaml')
+    cluster_config = ClusterConfigReader('./configs/cluster/cluster_config.yaml')
   
   # Setup monitoring options
   raw_id             = cluster_config.raw_id
@@ -29,15 +29,16 @@ def main():
   
   # Setup algorithm
   algorithm = cluster_config.algorithm
+  backfill  = cluster_config.backfill
   
   # Initialize cluster
   cluster = Cluster(cluster_config)
 
   # Loading jobs
   if args.job_config:
-    csv_reader = CSVReader(f'./configs/{args.job_config}', cluster_config)
+    csv_reader = CSVReader(f'./configs/job/{args.job_config}', cluster_config)
   else:
-    csv_reader = CSVReader('./configs/job_configs_3days.csv', cluster_config)
+    csv_reader = CSVReader('./configs/job/job_configs_3days.csv', cluster_config)
   job_configs = csv_reader.generate()
 
   # Simulation environment
@@ -47,7 +48,7 @@ def main():
   job_broker = Broker(env, job_configs, raw_id)
 
   # Job scheduler
-  scheduler = Scheduler(env, algorithm)
+  scheduler = Scheduler(env, algorithm, backfill)
 
   # Create simulation for the current settings
   simulation = Simulation(env, cluster, job_broker, scheduler, cluster_state_file, jobs_summary_file)

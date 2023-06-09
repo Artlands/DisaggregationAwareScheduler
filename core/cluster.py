@@ -18,6 +18,8 @@ class Cluster(object):
     self.compute_node_memory_capacity = cluster_config.compute_node_memory_capacity
     self.memory_node_memory_capacity = cluster_config.memory_node_memory_capacity
     self.memory_granularity = cluster_config.memory_granularity
+    self.cross_rack_allocation_counts = 0
+    self.cross_rack_allocation_capacity = 0
     
     for _ in range(self.total_racks):
       node_configs = []
@@ -40,6 +42,14 @@ class Cluster(object):
   def remove_job(self, job):
     if job in self.jobs:
       self.jobs.remove(job)
+      
+  def add_cross_rack_allocation_statistic(self, count, capacity):
+    self.cross_rack_allocation_counts += count
+    self.cross_rack_allocation_capacity += capacity
+    
+  def remove_cross_rack_allocation_statistic(self, count, capacity):
+    self.cross_rack_allocation_counts -= count
+    self.cross_rack_allocation_capacity -= capacity
     
   def add_failed_jobs(self, job, reason):
     self.failed_jobs.append({
@@ -51,6 +61,24 @@ class Cluster(object):
     for rack in self.racks:
       if rack.id == rack_id:
         return rack
+    return -1
+  
+  def find_job(self, job_id):
+    for job in self.jobs:
+      if job.id == job_id:
+        return job
+    return -1
+  
+  def find_computer_node(self, node_id):
+    for node in self.total_compute_nodes:
+      if node.id == node_id:
+        return node
+    return -1
+  
+  def find_memory_node(self, node_id):
+    for node in self.total_memory_nodes:
+      if node.id == node_id:
+        return node
     return -1
 
   def accommodate(self, job):
@@ -148,6 +176,8 @@ class Cluster(object):
       'failed_jobs': len(self.failed_jobs),
       'running_jobs':  len(self.running_jobs),
       'jobs_in_waiting_queue': len(self.jobs_in_waiting_queue),
+      'cross_rack_allocation_counts': self.cross_rack_allocation_counts,
+      'cross_rack_allocation_capacity': self.cross_rack_allocation_capacity,
       'compute_nodes_utilization': (len(self.total_compute_nodes) - len(self.total_free_compute_nodes))/(len(self.total_compute_nodes)),
       'total_local_memory_utilization': (self.total_local_memory_capacity - self.total_local_free_memory)/self.total_local_memory_capacity,
       'total_remote_memory_utilization': total_remote_memory_utilization

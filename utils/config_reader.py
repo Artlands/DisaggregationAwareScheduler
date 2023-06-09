@@ -3,11 +3,11 @@ import random
 import pandas as pd
 from operator import attrgetter
 from core.job import JobConfig
-from algorithms.backfill import Backfill
 from algorithms.sjf import ShortestJobFirst
 from algorithms.fcfs import FirstComeFirstServe
-from algorithms.rack_aware import RackAware
-from algorithms.rack_disa import RackDisa
+from algorithms.laf import LeastAreaFirst
+from algorithms.system_scale import SystemScale
+from algorithms.rack_scale import RackScale
 
 
 class CSVReader(object):
@@ -31,12 +31,8 @@ class CSVReader(object):
       nnodes = series.nnodes
       memory = series.memory
       duration = series.duration
-      if 'priority' in series:
-        priority = series.priority
-      else:
-        priority = random.random()
 
-      job_configs.append(JobConfig(jobid, submit, nnodes, memory, duration, priority))
+      job_configs.append(JobConfig(jobid, submit, nnodes, memory, duration))
 
     job_configs.sort(key=attrgetter('submit'))
 
@@ -78,8 +74,9 @@ class ClusterConfigReader(object):
     self.memory_node_memory_capacity = 512          # memory capacity of the compute node (in GB)
     self.compute_node_memory_capacity = 0           # memory capacity of the memory node (in GB)
     self.memory_granularity = 2                     # memory allocation granularity (in GB)
-    self.algorithm = FirstComeFirstServe() # default scheduler algorithm
-    self.valid_algorithms = ['sjf', 'fcfs', 'backfill', 'rack_aware', 'rack_disa']
+    self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
+    self.backfill = False                           # backfill option
+    self.valid_algorithms = ['sjf', 'fcfs', 'laf', 'system_scale', 'rack_scale']
     
     with open(self.filename, 'r') as f:
       try:
@@ -139,15 +136,18 @@ class ClusterConfigReader(object):
         self.algorithm = ShortestJobFirst()
       elif self.config['algorithm'] == 'fcfs':
         self.algorithm = FirstComeFirstServe()
-      elif self.config['algorithm'] == 'backfill':
-        self.algorithm = Backfill()
-      elif self.config['algorithm'] == 'rack_aware':
-        self.algorithm = RackAware()
-      elif self.config['algorithm'] == 'rack_disa':
-        self.algorithm = RackDisa()
+      elif self.config['algorithm'] == 'laf':
+        self.algorithm = LeastAreaFirst()
+      elif self.config['algorithm'] == 'system_scale':
+        self.algorithm = SystemScale()
+      elif self.config['algorithm'] == 'rack_scale':
+        self.algorithm = RackScale()
       else:
         print(f'Invalid algorithm name. Please choose from {self.valid_algorithms}.')
         exit(1)
+    
+    if 'backfill' in self.config:
+      self.backfill = self.config['backfill']
         
     # update monitoring option
     if 'monitor' in self.config:
@@ -167,7 +167,8 @@ class ClusterConfigReader(object):
                               + "-" + str(self.compute_node_memory_capacity) + "GB_" \
                               + "M" + str(self.memory_nodes_per_rack) \
                               + "-" + str(self.memory_node_memory_capacity) + "GB_"\
-                              + self.config['algorithm'] + ".json"
+                              + self.config['algorithm'] \
+                              + "_BF-" + str(self.backfill).lower() + ".json"
       self.jobs_summary_file = "./monitoring/job_summary_" \
                               + "J" + str(self.offset) \
                               + "-" + str(self.number) \
@@ -175,5 +176,6 @@ class ClusterConfigReader(object):
                               + "-" + str(self.compute_node_memory_capacity) + "GB_" \
                               + "M" + str(self.memory_nodes_per_rack) \
                               + "-" + str(self.memory_node_memory_capacity) + "GB_"\
-                              + self.config['algorithm'] + ".json"
+                              + self.config['algorithm'] \
+                              + "_BF-" + str(self.backfill).lower() + ".json"
           

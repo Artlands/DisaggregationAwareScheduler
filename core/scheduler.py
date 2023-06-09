@@ -2,10 +2,11 @@ import random
 from scipy.stats import truncnorm
 
 class Scheduler(object):
-  def __init__(self, env, algorithm):
+  def __init__(self, env, algorithm, backfill):
     print(f'Initializing scheduler')
     self.env = env
     self.algorithm = algorithm
+    self.backfill = backfill
     self.simulation = None
     self.cluster = None
     self.destroyed = False
@@ -16,7 +17,7 @@ class Scheduler(object):
 
   def make_decision(self):
     while True:
-      job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now)
+      job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, self.backfill)
       if (job == None):
         # print(f'No job to schedule')
         break

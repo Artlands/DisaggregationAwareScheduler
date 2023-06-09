@@ -23,10 +23,8 @@ def cdf_plot(all_dfs, metric, algorithms):
   
   labels = []
   for n in algorithms:
-    if n == 'rack_disa':
-      lname = 'rack_aware(rack-scale)'
-    elif n == 'rack_disa_large':
-      lname = 'rack_aware(rack-scale, large memory)'
+    if n in['rack_scale', 'system_scale']:
+      lname = n + '(backfill)'
     else:
       lname = n
     labels.append(lname)

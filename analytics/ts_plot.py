@@ -15,10 +15,8 @@ def ts_plot(all_dfs, metric, algorithms):
   ylabel = metric.replace('_', ' ').title()
   labels = []
   for n in algorithms:
-    if n == 'rack_disa':
-      lname = 'rack_aware(rack-scale)'
-    elif n == 'rack_disa_large':
-      lname = 'rack_aware(rack-scale, large memorys)'
+    if n in['rack_scale', 'system_scale']:
+      lname = n + '(backfill)'
     else:
       lname = n
     labels.append(lname)
@@ -35,5 +33,4 @@ def ts_plot(all_dfs, metric, algorithms):
 
   ax.set_ylabel(f"{ylabel}")
   ax.set_xlabel("Time")
-  ax.legend(fontsize=10, frameon=False)
-  
+  ax.legend(frameon=False, fontsize=10)
