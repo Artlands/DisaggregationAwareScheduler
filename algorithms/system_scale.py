@@ -7,7 +7,12 @@ class SystemScale(Algorithm):
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
 
-    jobs.sort(key=attrgetter('submit'))
+    # Calculate the priority of each job using the FirstComeFirstServe formula
+    for job in jobs:
+      job.priority = job.submit
+      
+    # Sort jobs by priority
+    jobs.sort(key=attrgetter('priority'))
     if(len(jobs) == 0):
       return None, []
     else:

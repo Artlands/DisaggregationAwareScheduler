@@ -23,7 +23,8 @@ class Job(object):
     # self.local_memory = min(self.memory, compute_node_memory_capacity)
     # self.remote_memory = max(0, self.memory - compute_node_memory_capacity)
     self.duration = job_config.duration
-    self.area = self.nnodes * self.duration
+    self.scale = self.nnodes * self.duration
+    self.priority = 0
     self.slowdown = 0
 
     self.allocated_nodes = None
@@ -34,11 +35,10 @@ class Job(object):
     self.cross_rack_allocation_capacity = 0
 
     self.started = False
-    self.started_timestamp = 0
+    self.start = 0
     self.finished = False
-    self.finished_timestamp = 0
+    self.finish = 0
     self.failed = False
-    self.failed_timestamp = 0
     Job.idx += 1
     
   def attach(self, cluster):
@@ -51,7 +51,7 @@ class Job(object):
   def do_work(self):
     yield self.env.timeout(self.duration)
     self.finished = True
-    self.finished_timestamp = self.env.now
+    self.finish = self.env.now
     if self.cluster.job_status == True:
       print(f'Job {self.id} finishs time: {self.env.now}')
 
@@ -70,18 +70,18 @@ class Job(object):
         
   def fail(self):
     self.failed = True
-    self.failed_timestamp = self.env.now
+    self.failt = self.env.now
     if self.cluster.job_status == True:
       print(f'Job {self.id} fails time: {self.env.now}')
     # Remote this job from the cluster job list
     self.cluster.remove_job(self)
     
 
-  def start(self, nodes, memory_nodes):
+  def run(self, nodes, memory_nodes):
     self.started = True
-    self.started_timestamp = self.env.now
+    self.start = self.env.now
     if self.cluster.job_status == True:
-      print(f'Job {self.id} starts time: {self.started_timestamp}')
+      print(f'Job {self.id} starts time: {self.start}')
 
     self.allocated_nodes = nodes
     for node in self.allocated_nodes:

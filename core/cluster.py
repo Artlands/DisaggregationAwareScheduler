@@ -190,8 +190,8 @@ class Cluster(object):
       job_id_str = str(job.id)
       jobs_summary[job_id_str] = {
         'submit': int(job.submit),
-        'start': int(job.started_timestamp),
-        'end': int(job.finished_timestamp),
+        'start': int(job.start),
+        'finish': int(job.finish),
         'nnodes': int(job.nnodes),
         'memory': int(job.memory),
         'duration': int(job.duration),
@@ -206,7 +206,7 @@ class Cluster(object):
       jobs_summary[job_id_str] = {
         'submit': int(job.submit),
         'start': 0,
-        'end': 0,
+        'finish': 0,
         'nnodes': int(job.nnodes),
         'memory': int(job.memory),
         'duration': 0,

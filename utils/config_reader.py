@@ -5,7 +5,10 @@ from operator import attrgetter
 from core.job import JobConfig
 from algorithms.sjf import ShortestJobFirst
 from algorithms.fcfs import FirstComeFirstServe
-from algorithms.laf import LeastAreaFirst
+from algorithms.lsf import LeastScaleFirst
+from algorithms.wfp3 import WFP3
+from algorithms.unicep import UNICEP
+from algorithms.f1 import F1
 from algorithms.system_scale import SystemScale
 from algorithms.rack_scale import RackScale
 
@@ -76,7 +79,7 @@ class ClusterConfigReader(object):
     self.memory_granularity = 2                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
     self.backfill = False                           # backfill option
-    self.valid_algorithms = ['sjf', 'fcfs', 'laf', 'system_scale', 'rack_scale']
+    self.valid_algorithms = ['sjf', 'fcfs', 'lsf', 'wfp3', 'unicep', 'f1', 'system_scale', 'rack_scale']
     
     with open(self.filename, 'r') as f:
       try:
@@ -136,8 +139,14 @@ class ClusterConfigReader(object):
         self.algorithm = ShortestJobFirst()
       elif self.config['algorithm'] == 'fcfs':
         self.algorithm = FirstComeFirstServe()
-      elif self.config['algorithm'] == 'laf':
-        self.algorithm = LeastAreaFirst()
+      elif self.config['algorithm'] == 'lsf':
+        self.algorithm = LeastScaleFirst()
+      elif self.config['algorithm'] == 'wfp3':
+        self.algorithm = WFP3()
+      elif self.config['algorithm'] == 'unicep':
+        self.algorithm = UNICEP()
+      elif self.config['algorithm'] == 'f1':
+        self.algorithm = F1()
       elif self.config['algorithm'] == 'system_scale':
         self.algorithm = SystemScale()
       elif self.config['algorithm'] == 'rack_scale':

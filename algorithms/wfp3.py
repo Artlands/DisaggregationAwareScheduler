@@ -3,21 +3,24 @@ from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
 
 
-class FirstComeFirstServe(Algorithm):
+class WFP3(Algorithm):
   """
-     job submit: s_i, 
-     job duration: r_i,
-     job size (nnodes): n_i, nnodes
-     job scale: a_i, nnodes * duration
-     
-     piority function: f = s_i
+    job submit: s_i,
+    job duration: r_i,
+    job size (nnodes): n_i, nnodes
+    job scale: a_i, nnodes * duration
+    job waiting time: w_i, clock - s_i
+    
+    Weighted Fairness Priority
+    piority function: f = -(w_i/r_i)^3 * n_i, favors old/short jobs more, 
+    avoiding large job starvation
   """
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
-
-    # Calculate the priority of each job using the FirstComeFirstServe formula
+    
+    # Calculate the priority of each job using the WFP3 formula
     for job in jobs:
-      job.priority = job.submit
+      job.priority = -((clock - job.submit)/job.duration)**3 * job.nnodes
       
     # Sort jobs by priority
     jobs.sort(key=attrgetter('priority'))

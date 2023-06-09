@@ -272,7 +272,7 @@ def backfill_plan(front_job, candidate_jobs, cluster, clock):
   jobs_time_to_completion = [] # [(job_id, time_to_completion)]
   for job in running_jobs:
     job_id = job.id
-    time_to_completion = job.duration - (clock - job.started_timestamp)
+    time_to_completion = job.duration - (clock - job.start)
     jobs_time_to_completion.append( (job_id, time_to_completion) )
   
   # Sort the jobs by time to completion in ascending order

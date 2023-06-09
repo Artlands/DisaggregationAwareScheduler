@@ -4,11 +4,23 @@ from algorithms.common import load_balance_allocation, backfill_plan
 
 
 class ShortestJobFirst(Algorithm):
+  """
+    job submit: s_i, 
+    job duration: r_i,
+    job size (nnodes): n_i, nnodes
+    job scale: a_i, nnodes * duration
+    
+    piority function: f = r_i
+  """
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
     
-    # Sort jobs by duration
-    jobs.sort(key=attrgetter('duration'))
+    # Calculate the priority of each job using the ShortestJobFirst formula
+    for job in jobs:
+      job.priority = job.duration
+      
+    # Sort jobs by priority
+    jobs.sort(key=attrgetter('priority'))
     if(len(jobs) == 0):
       return None, []
     else:

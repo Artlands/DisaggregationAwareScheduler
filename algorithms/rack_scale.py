@@ -4,10 +4,23 @@ from algorithms.common import rack_scale_allocation, backfill_plan
 
 
 class RackScale(Algorithm):
+  """
+     job submit: s_i, 
+     job duration: r_i,
+     job size (nnodes): n_i, nnodes
+     job scale: a_i, nnodes * duration
+     
+     piority function: f = s_i
+  """
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
 
-    jobs.sort(key=attrgetter('submit'))
+    # Calculate the priority of each job using the FirstComeFirstServe formula
+    for job in jobs:
+      job.priority = job.submit
+      
+    # Sort jobs by priority
+    jobs.sort(key=attrgetter('priority'))
     if(len(jobs) == 0):
       return None, []
     else:

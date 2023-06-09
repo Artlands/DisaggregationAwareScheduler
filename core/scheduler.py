@@ -24,7 +24,7 @@ class Scheduler(object):
       else:
         # Calculate performance slowdown
         compute_nodes, memory_nodes = self.performance_slowdown(job, compute_memory_node_tuples)
-        job.start(compute_nodes, memory_nodes)
+        job.run(compute_nodes, memory_nodes)
         
   def performance_slowdown(self, job, compute_memory_node_tuples):
     # Model the performance slowdown based on ratio of remote memory and the distance of the allocated compute nodes to the memory nodes.

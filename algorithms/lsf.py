@@ -3,12 +3,24 @@ from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
 
 
-class LeastAreaFirst(Algorithm):
+class LeastScaleFirst(Algorithm):
+  """
+    job submit: s_i, 
+    job duration: r_i,
+    job size (nnodes): n_i, nnodes
+    job scale: a_i, nnodes * duration
+    
+    piority function: f = a_i
+  """
   def __call__(self, cluster, clock, backfill):
     jobs = cluster.jobs_in_waiting_queue
     
-    # Sort jobs by area (nnodes * duration)
-    jobs.sort(key=attrgetter('area'))
+    # Calculate the priority of each job using the LeastScaleFirst formula
+    for job in jobs:
+      job.priority = job.scale
+      
+    # Sort jobs by priority
+    jobs.sort(key=attrgetter('priority'))
     if(len(jobs) == 0):
       return None, []
     else:
