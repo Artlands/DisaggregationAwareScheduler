@@ -11,7 +11,7 @@ plt.rcParams['font.size'] = ftsize
 
 figsize=(12, 8)
 
-def cdf_plot(all_dfs, metric, algorithms):
+def cdf_plot(all_dfs, metric, tracenames):
   if metric == 'turnaround':
     xlabel = 'Job Turnaround Time (End Time - Submit Time)'
   elif metric == 'waiting':
@@ -21,13 +21,7 @@ def cdf_plot(all_dfs, metric, algorithms):
   else:
     xlabel = metric.replace('_', ' ').title()
   
-  labels = []
-  for n in algorithms:
-    if n in['rack_scale', 'system_scale']:
-      lname = n + '(backfill)'
-    else:
-      lname = n
-    labels.append(lname)
+  labels = tracenames
     
   all_dfs_none_fails = []
   for df in all_dfs:
@@ -58,9 +52,13 @@ def cdf_plot(all_dfs, metric, algorithms):
 
   colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b','#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#1f78b4', '#33a02c']
 
-  for i, cdf in enumerate(all_cdfs):
-    ax.plot(cdf.index.to_numpy(), cdf.to_numpy(), label=labels[i], color=colors[i])
-
+  if len(all_cdfs) <= len(colors):
+    for i, cdf in enumerate(all_cdfs):
+      ax.plot(cdf.index.to_numpy(), cdf.to_numpy(), label=labels[i], color=colors[i])
+  else:
+    for i, cdf in enumerate(all_cdfs):
+      ax.plot(cdf.index.to_numpy(), cdf.to_numpy(), label=labels[i])
+      
   ax.yaxis.grid(linestyle='--')
   ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
 

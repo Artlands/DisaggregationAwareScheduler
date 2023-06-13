@@ -4,7 +4,7 @@ from core.job import Job
 
 class Broker(object):
   job_cls = Job
-  def __init__(self, env, jobs_configs, raw_id = True):
+  def __init__(self, env, jobs_configs, raw_id = True, warmup_threshold=0):
     print(f'Initializing job broker')
     self.env = env
     self.simulation = None
@@ -12,6 +12,7 @@ class Broker(object):
     self.destroyed = False
     self.jobs_configs = jobs_configs
     self.raw_id = raw_id
+    self.warmup_threshold = warmup_threshold
 
   def attach(self, simulation):
     self.simulation = simulation
@@ -25,7 +26,7 @@ class Broker(object):
     for job_config in self.jobs_configs:
       assert job_config.submit >=self.env.now
       yield self.env.timeout(job_config.submit - self.env.now)
-      job = Broker.job_cls(self.env, job_config, self.raw_id)
+      job = Broker.job_cls(self.env, job_config, self.raw_id, self.warmup_threshold)
       job.attach(self.cluster)
       
       if self.cluster.job_status == True:

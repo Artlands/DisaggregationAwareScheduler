@@ -18,7 +18,7 @@ def main():
   
   # Load cluster configuration
   if args.cluster_config:
-    cluster_config = ClusterConfigReader(f'./configs/cluster/{args.cluster_config}')
+    cluster_config = ClusterConfigReader(f'{args.cluster_config}')
   else:
     cluster_config = ClusterConfigReader('./configs/cluster/cluster_config.yaml')
   
@@ -30,9 +30,9 @@ def main():
   # Setup algorithm
   algorithm = cluster_config.algorithm
   backfill  = cluster_config.backfill
-  
-  # Initialize cluster
-  cluster = Cluster(cluster_config)
+  warmup_threshold = cluster_config.warmup_threshold
+  disaggregation = cluster_config.disaggregation
+  rack_scale = cluster_config.rack_scale
 
   # Loading jobs
   if args.job_config:
@@ -43,12 +43,15 @@ def main():
 
   # Simulation environment
   env = simpy.Environment()
+  
+  # Initialize cluster
+  cluster = Cluster(env, cluster_config)
 
   # Job broker: submits job to the cluster
-  job_broker = Broker(env, job_configs, raw_id)
+  job_broker = Broker(env, job_configs, raw_id, warmup_threshold)
 
   # Job scheduler
-  scheduler = Scheduler(env, algorithm, backfill)
+  scheduler = Scheduler(env, algorithm, backfill, warmup_threshold, disaggregation, rack_scale)
 
   # Create simulation for the current settings
   simulation = Simulation(env, cluster, job_broker, scheduler, cluster_state_file, jobs_summary_file)

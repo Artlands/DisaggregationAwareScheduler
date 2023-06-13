@@ -1,15 +1,19 @@
 import random
-from scipy.stats import truncnorm
+from algorithms.fcfs import FirstComeFirstServe
 
 class Scheduler(object):
-  def __init__(self, env, algorithm, backfill):
+  def __init__(self, env, algorithm, backfill, warmup_threshold, disaggregation, rack_scale):
     print(f'Initializing scheduler')
     self.env = env
     self.algorithm = algorithm
     self.backfill = backfill
+    self.disaggregation = disaggregation
+    self.rack_scale = rack_scale
     self.simulation = None
     self.cluster = None
     self.destroyed = False
+    self.warmup_threshold = warmup_threshold
+    self.warmup_algorithm = FirstComeFirstServe()
 
   def attach(self,simulation):
     self.simulation = simulation
@@ -17,9 +21,11 @@ class Scheduler(object):
 
   def make_decision(self):
     while True:
-      job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, self.backfill)
+      if self.env.now > self.warmup_threshold:
+        job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, self.backfill, self.disaggregation, self.rack_scale)
+      else:
+        job, compute_memory_node_tuples = self.warmup_algorithm(self.cluster, self.env.now, False, False, False)
       if (job == None):
-        # print(f'No job to schedule')
         break
       else:
         # Calculate performance slowdown
@@ -74,6 +80,7 @@ class Scheduler(object):
   def get_truncated_normal(self, mean=0.25, sd=0.1, low=0, upp=0.5):
     # return truncnorm(
     #     (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
+    random.seed(34)
     number = random.normalvariate(mean, sd)
     while number < low or number > upp:
       number = random.normalvariate(mean, sd)

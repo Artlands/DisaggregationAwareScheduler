@@ -4,8 +4,9 @@ from core.rack import Rack
 
 
 class Cluster(object):
-  def __init__(self, cluster_config):
+  def __init__(self, env, cluster_config):
     print(f'Initializing cluster')
+    self.env = env
     self.racks = []
     self.jobs = []
     self.failed_jobs = []
@@ -176,12 +177,22 @@ class Cluster(object):
       'failed_jobs': len(self.failed_jobs),
       'running_jobs':  len(self.running_jobs),
       'jobs_in_waiting_queue': len(self.jobs_in_waiting_queue),
+      'jobs_average_waiting_time_in_queue': self.jobs_average_waiting_time_in_queue,
       'cross_rack_allocation_counts': self.cross_rack_allocation_counts,
       'cross_rack_allocation_capacity': self.cross_rack_allocation_capacity,
       'compute_nodes_utilization': (len(self.total_compute_nodes) - len(self.total_free_compute_nodes))/(len(self.total_compute_nodes)),
       'total_local_memory_utilization': (self.total_local_memory_capacity - self.total_local_free_memory)/self.total_local_memory_capacity,
       'total_remote_memory_utilization': total_remote_memory_utilization
     }
+  
+  @property
+  def jobs_average_waiting_time_in_queue(self):
+    total_waiting_time = 0
+    for job in self.jobs_in_waiting_queue:
+      total_waiting_time += self.env.now - job.submit
+    if len(self.jobs_in_waiting_queue) == 0:
+      return 0
+    return total_waiting_time/len(self.jobs_in_waiting_queue)
 
   @property
   def jobs_summary(self):

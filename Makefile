@@ -1,19 +1,15 @@
-run_bf:
-# python run_simulation.py --cluster_config fcfs_bf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-# python run_simulation.py --cluster_config sjf_bf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-# python run_simulation.py --cluster_config lsf_bf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-	python run_simulation.py --cluster_config f1_bf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-# python run_simulation.py --cluster_config wfp3_bf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-# python run_simulation.py --cluster_config unicep_bf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
+.PHONY:
+	all clean
 
-run_non_bf:
-	python run_simulation.py --cluster_config fcfs.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-	python run_simulation.py --cluster_config sjf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-	python run_simulation.py --cluster_config lsf.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-	python run_simulation.py --cluster_config f1.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-	python run_simulation.py --cluster_config wfp3.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
-	python run_simulation.py --cluster_config unicep.yaml --job_config job_configs_3days.csv > /dev/null 2>&1 &
+# A Python script that generates a configuration file using the config_gen.py utility.
+gen_config:
+	python ./utils/config_gen.py 
 
-# Clean monitoring files
+all: gen_config run
+
+run: gen_config
+	bash run_bf.sh
+
+# A target that removes all .json files in the ./monitoring directory
 clean:
 	rm ./monitoring/*.json

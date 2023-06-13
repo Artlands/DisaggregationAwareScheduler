@@ -1,5 +1,5 @@
+import os
 import yaml
-import random
 import pandas as pd
 from operator import attrgetter
 from core.job import JobConfig
@@ -9,8 +9,6 @@ from algorithms.lsf import LeastScaleFirst
 from algorithms.wfp3 import WFP3
 from algorithms.unicep import UNICEP
 from algorithms.f1 import F1
-from algorithms.system_scale import SystemScale
-from algorithms.rack_scale import RackScale
 
 
 class CSVReader(object):
@@ -63,6 +61,7 @@ class ClusterConfigReader(object):
     print(f'Loading cluster configuration from {filename}')
     self.filename = filename
     self.monitor = True                             # generate monitoring files
+    self.metric_folder = 'metrics'                  # folder of the monitoring metric files
     self.cluster_state_file = None                  # cluster state file
     self.jobs_summary_file = None                   # jobs summary file
     self.node_status = False                        # print node status when running or stopping jobs
@@ -71,6 +70,7 @@ class ClusterConfigReader(object):
     self.offset = 0                                 # offset in the job configuration file
     self.number = 0                                 # number of jobs to be loaded
     self.disaggregateion = False                    # disaggregation option
+    self.rack_scale = False                         # rack scale disaggregation option
     self.total_racks = 6                            # total number of racks
     self.compute_nodes_per_rack = 240               # number of compute nodes in each rack
     self.memory_nodes_per_rack = 0                  # number of memory nodes in each rack
@@ -79,7 +79,8 @@ class ClusterConfigReader(object):
     self.memory_granularity = 2                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
     self.backfill = False                           # backfill option
-    self.valid_algorithms = ['sjf', 'fcfs', 'lsf', 'wfp3', 'unicep', 'f1', 'system_scale', 'rack_scale']
+    self.warmup_threshold = 0                       # warmup threshold
+    self.valid_algorithms = ['sjf', 'fcfs', 'lsf', 'wfp3', 'unicep', 'f1']
     
     with open(self.filename, 'r') as f:
       try:
@@ -103,7 +104,11 @@ class ClusterConfigReader(object):
     # update disaggregation option
     if 'disaggregation' in self.config:
       self.disaggregation = self.config['disaggregation']      
-        
+    
+    # update rack scale disaggregation option
+    if 'rack_scale' in self.config:
+      self.rack_scale = self.config['rack_scale']
+      
     # update default values
     if 'racks' in self.config:
       self.total_racks = self.config['racks']
@@ -147,20 +152,22 @@ class ClusterConfigReader(object):
         self.algorithm = UNICEP()
       elif self.config['algorithm'] == 'f1':
         self.algorithm = F1()
-      elif self.config['algorithm'] == 'system_scale':
-        self.algorithm = SystemScale()
-      elif self.config['algorithm'] == 'rack_scale':
-        self.algorithm = RackScale()
       else:
-        print(f'Invalid algorithm name. Please choose from {self.valid_algorithms}.')
+        print(f'Invalid algorithm name. Please choose one from {self.valid_algorithms}.')
         exit(1)
     
     if 'backfill' in self.config:
       self.backfill = self.config['backfill']
+    
+    if 'warmup_threshold' in self.config:
+      self.warmup_threshold = self.config['warmup_threshold']
         
     # update monitoring option
     if 'monitor' in self.config:
       self.monitor = self.config['monitor']
+      
+    if 'metric_folder' in self.config:
+      self.metric_folder = self.config['metric_folder']
       
     # update offset and number
     if 'offset' in self.config:
@@ -169,7 +176,11 @@ class ClusterConfigReader(object):
       self.number = self.config['number']
       
     if self.monitor:
-      self.cluster_state_file = "./monitoring/cluster_state_" \
+      # if ./monitoring/{self.metric_folder} does not exist, create it
+      if not os.path.exists(f"./monitoring/{self.metric_folder}"):
+        os.makedirs(f"./monitoring/{self.metric_folder}")
+        
+      self.cluster_state_file = f"./monitoring/{self.metric_folder}/cluster_state_" \
                               + "J" + str(self.offset) \
                               + "-" + str(self.number) \
                               + "_C" + str(self.compute_nodes_per_rack)  \
@@ -177,8 +188,9 @@ class ClusterConfigReader(object):
                               + "M" + str(self.memory_nodes_per_rack) \
                               + "-" + str(self.memory_node_memory_capacity) + "GB_"\
                               + self.config['algorithm'] \
-                              + "_BF-" + str(self.backfill).lower() + ".json"
-      self.jobs_summary_file = "./monitoring/job_summary_" \
+                              + "_BF-" + str(self.backfill).lower() \
+                              + "_Rack-" + str(self.rack_scale).lower() + ".json"
+      self.jobs_summary_file = f"./monitoring/{self.metric_folder}/job_summary_" \
                               + "J" + str(self.offset) \
                               + "-" + str(self.number) \
                               + "_C" + str(self.compute_nodes_per_rack)  \
@@ -186,5 +198,6 @@ class ClusterConfigReader(object):
                               + "M" + str(self.memory_nodes_per_rack) \
                               + "-" + str(self.memory_node_memory_capacity) + "GB_"\
                               + self.config['algorithm'] \
-                              + "_BF-" + str(self.backfill).lower() + ".json"
+                              + "_BF-" + str(self.backfill).lower() \
+                              + "_Rack-" + str(self.rack_scale).lower() + ".json"
           

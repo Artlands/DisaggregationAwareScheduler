@@ -8,7 +8,7 @@ class JobConfig(object):
 
 class Job(object):
   idx = 0
-  def __init__(self, env, job_config, raw_id):
+  def __init__(self, env, job_config, raw_id, warmup_threshold):
     self.env = env
     self.cluster = None
     
@@ -39,6 +39,8 @@ class Job(object):
     self.finished = False
     self.finish = 0
     self.failed = False
+    
+    self.warmup_threshold = warmup_threshold
     Job.idx += 1
     
   def attach(self, cluster):
@@ -64,9 +66,10 @@ class Job(object):
         remote_memory = remote_memory_record['remote_memory']
         memory_node.deallocate_memory(self, remote_memory)
         
-    # update cross-rack allocation statistics
-    self.cluster.remove_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
-                                                        self.cross_rack_allocation_capacity)
+    # update cross-rack allocation statistics; only count the jobs after warmup_threshold
+    if self.submit >= self.warmup_threshold:
+      self.cluster.remove_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
+                                                          self.cross_rack_allocation_capacity)
         
   def fail(self):
     self.failed = True
@@ -95,8 +98,9 @@ class Job(object):
         remote_memory = remote_memory_record['remote_memory']
         memory_node.allocate_memory(self, remote_memory)
     
-    # update cross-rack allocation statistics
-    self.cluster.add_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
-                                                     self.cross_rack_allocation_capacity)
+    # update cross-rack allocation statistics; only count the jobs after warmup_threshold
+    if self.submit >= self.warmup_threshold:
+      self.cluster.add_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
+                                                      self.cross_rack_allocation_capacity)
 
     self.process = self.env.process(self.do_work())

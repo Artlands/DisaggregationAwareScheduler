@@ -1,6 +1,7 @@
 from operator import attrgetter
 from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import rack_scale_allocation, system_scale_allocation
 
 
 class FirstComeFirstServe(Algorithm):
@@ -12,7 +13,16 @@ class FirstComeFirstServe(Algorithm):
      
      piority function: f = s_i
   """
-  def __call__(self, cluster, clock, backfill):
+  def __call__(self, cluster, clock, backfill, disaggregation, rack_scale):
+    if disaggregation:
+      if rack_scale:
+        allocation_func = rack_scale_allocation
+      else:
+        allocation_func = system_scale_allocation
+    else:
+      allocation_func = load_balance_allocation
+      # print(f'Using load balance allocation in FCFS')
+      
     jobs = cluster.jobs_in_waiting_queue
 
     # Calculate the priority of each job using the FirstComeFirstServe formula
@@ -24,7 +34,7 @@ class FirstComeFirstServe(Algorithm):
     if(len(jobs) == 0):
       return None, []
     else:
-      job, compute_memory_node_tuples = load_balance_allocation(jobs[0], cluster)
+      job, compute_memory_node_tuples = allocation_func(jobs[0], cluster)
     
     if (job != None):
       return job, compute_memory_node_tuples
@@ -34,7 +44,7 @@ class FirstComeFirstServe(Algorithm):
         if(len(jobs) >= 2):
           job = backfill_plan(jobs[0], jobs[1:], cluster, clock)
           if(job != None):
-            job, compute_memory_node_tuples = load_balance_allocation(job, cluster)
+            job, compute_memory_node_tuples = allocation_func(job, cluster)
             if(job != None):
               return job, compute_memory_node_tuples
       return None, []
