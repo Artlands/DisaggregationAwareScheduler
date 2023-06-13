@@ -19,13 +19,10 @@ class F1(Algorithm):
     if disaggregation:
       if rack_scale:
         allocation_func = rack_scale_allocation
-        # print(f'Using Rack Scale allocation in F1')
       else:
         allocation_func = system_scale_allocation
-        # print(f'Using System Scale allocation in F1')
     else:
       allocation_func = load_balance_allocation
-      # print(f'Using load balance allocation in F1')
       
     jobs = cluster.jobs_in_waiting_queue
     

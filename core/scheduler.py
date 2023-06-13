@@ -2,7 +2,9 @@ import random
 from algorithms.fcfs import FirstComeFirstServe
 
 class Scheduler(object):
-  def __init__(self, env, algorithm, backfill, warmup_threshold, disaggregation, rack_scale):
+  def __init__(self, env, algorithm, backfill, 
+              warmup_threshold, timeout_threshold, 
+              disaggregation, rack_scale):
     print(f'Initializing scheduler')
     self.env = env
     self.algorithm = algorithm
@@ -12,6 +14,7 @@ class Scheduler(object):
     self.simulation = None
     self.cluster = None
     self.destroyed = False
+    self.timeout_threshold = timeout_threshold
     self.warmup_threshold = warmup_threshold
     self.warmup_algorithm = FirstComeFirstServe()
 
@@ -21,6 +24,15 @@ class Scheduler(object):
 
   def make_decision(self):
     while True:
+      # Check jobs in the waiting queue to see if they wait too long; this is
+      # to prevent from simulation running forever in some cases
+      for job in self.cluster.jobs_in_waiting_queue:
+        wait_time = self.env.now - job.submit
+        if wait_time > self.timeout_threshold:
+          job.fail()
+          self.cluster.add_failed_jobs(job, 'timeout')
+      
+      # Schedule jobs
       if self.env.now > self.warmup_threshold:
         job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, self.backfill, self.disaggregation, self.rack_scale)
       else:

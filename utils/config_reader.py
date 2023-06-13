@@ -79,7 +79,8 @@ class ClusterConfigReader(object):
     self.memory_granularity = 2                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
     self.backfill = False                           # backfill option
-    self.warmup_threshold = 0                       # warmup threshold
+    self.timeout_threshold = 36000                  # timeout threshold
+    self.warmup_threshold = 5000                    # warmup threshold
     self.valid_algorithms = ['sjf', 'fcfs', 'lsf', 'wfp3', 'unicep', 'f1']
     
     with open(self.filename, 'r') as f:
@@ -158,6 +159,9 @@ class ClusterConfigReader(object):
     
     if 'backfill' in self.config:
       self.backfill = self.config['backfill']
+      
+    if 'timeout_threshold' in self.config:
+      self.timeout_threshold = self.config['timeout_threshold']
     
     if 'warmup_threshold' in self.config:
       self.warmup_threshold = self.config['warmup_threshold']

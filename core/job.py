@@ -20,8 +20,7 @@ class Job(object):
     self.submit = job_config.submit
     self.nnodes = job_config.nnodes
     self.memory = job_config.memory
-    # self.local_memory = min(self.memory, compute_node_memory_capacity)
-    # self.remote_memory = max(0, self.memory - compute_node_memory_capacity)
+
     self.duration = job_config.duration
     self.scale = self.nnodes * self.duration
     self.priority = 0

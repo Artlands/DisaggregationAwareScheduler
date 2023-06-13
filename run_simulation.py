@@ -30,6 +30,7 @@ def main():
   # Setup algorithm
   algorithm = cluster_config.algorithm
   backfill  = cluster_config.backfill
+  timeout_threshold = cluster_config.timeout_threshold
   warmup_threshold = cluster_config.warmup_threshold
   disaggregation = cluster_config.disaggregation
   rack_scale = cluster_config.rack_scale
@@ -51,10 +52,13 @@ def main():
   job_broker = Broker(env, job_configs, raw_id, warmup_threshold)
 
   # Job scheduler
-  scheduler = Scheduler(env, algorithm, backfill, warmup_threshold, disaggregation, rack_scale)
+  scheduler = Scheduler(env, algorithm, backfill, 
+                        timeout_threshold, warmup_threshold, 
+                        disaggregation, rack_scale)
 
   # Create simulation for the current settings
-  simulation = Simulation(env, cluster, job_broker, scheduler, cluster_state_file, jobs_summary_file)
+  simulation = Simulation(env, cluster, job_broker, scheduler, 
+                          cluster_state_file, jobs_summary_file)
   
   simulation.run()
   env.run()

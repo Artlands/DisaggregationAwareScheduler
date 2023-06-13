@@ -1,22 +1,10 @@
 import os
+import sys
 import yaml
 
-compute_nodes = 200
-compute_node_capacity = 256
-memory_node_capacity = 1024
-memory_granularity = 2
-memory_nodes = range(1, 41) # varying memory nodes
-# memory_nodes = [20]
-
-disaggregation = True
-rack_scale = False
-
-# algorithms = ['sjf', 'fcfs', 'lsf', 'wfp3', 'unicep', 'f1'] # varying algorithms
-algorithms = ['f1']
-backfill = True
-
-metric_folder = 'conf_compare_sys'
-
+# import another python file in the different directory
+sys.path.insert(0, './configs/')
+from sim_config import *
 
 # Remove the existing config files in the directory
 for filename in os.listdir('./configs/cluster/gen'):
@@ -42,6 +30,7 @@ for mem_node in memory_nodes:
       'number': 0,
       'algorithm': algo,
       'backfill': backfill,
+      'timeout_threshold': 36000,
       'warmup_threshold': 5000,
       'metric_folder': metric_folder
     }
