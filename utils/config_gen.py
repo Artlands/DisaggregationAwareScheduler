@@ -30,7 +30,7 @@ for mem_node in memory_nodes:
       'number': 0,
       'algorithm': algo,
       'backfill': backfill,
-      'timeout_threshold': 36000,
+      'timeout_threshold': timeout_threshold,
       'warmup_threshold': 5000,
       'metric_folder': metric_folder
     }

@@ -81,7 +81,7 @@ class ClusterConfigReader(object):
     self.backfill = False                           # backfill option
     self.timeout_threshold = 36000                  # timeout threshold
     self.warmup_threshold = 5000                    # warmup threshold
-    self.valid_algorithms = ['sjf', 'fcfs', 'lsf', 'wfp3', 'unicep', 'f1']
+    self.valid_algorithms = self.get_valid_algorithms
     
     with open(self.filename, 'r') as f:
       try:
@@ -204,4 +204,12 @@ class ClusterConfigReader(object):
                               + self.config['algorithm'] \
                               + "_BF-" + str(self.backfill).lower() \
                               + "_Rack-" + str(self.rack_scale).lower() + ".json"
+  
+  @property                        
+  def get_valid_algorithms(self):
+    folder_path = "./algorithms"
+    default_files = ['__init__.py', 'common.py']
+    files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+    valid_algorithms = [f.replace('.py', '') for f in files if f not in default_files]
+    return valid_algorithms
           

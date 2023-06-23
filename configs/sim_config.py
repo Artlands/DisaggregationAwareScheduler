@@ -4,6 +4,7 @@ memory_node_capacity = 1024
 memory_granularity = 2
 memory_nodes = range(1, 41) # varying memory nodes
 # memory_nodes = [20]
+timeout_threshold = 36000 * 2
 
 disaggregation = True
 rack_scale = False

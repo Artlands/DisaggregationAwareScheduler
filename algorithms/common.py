@@ -185,6 +185,17 @@ def system_scale_allocation(job, cluster):
 
 
 def rack_scale_allocation(job, cluster):
+  """rack_scale_allocation Allocate compute nodes and memory nodes in the same rack for a job
+
+  _extended_summary_
+
+  Args:
+      job (_type_): _description_
+      cluster (_type_): _description_
+
+  Returns:
+      _type_: _description_
+  """
   cnode_memory_capacity = cluster.compute_node_memory_capacity
   memory_granularity = cluster.memory_granularity
   compute_memory_node_tuples = [] #(compute_node, memory_node, remote_memory_capacity)
