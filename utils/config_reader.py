@@ -9,7 +9,12 @@ from algorithms.lsf import LeastScaleFirst
 from algorithms.wfp3 import WFP3
 from algorithms.unicep import UNICEP
 from algorithms.f1 import F1
-
+from algorithms.fair import Fair
+from algorithms.mratio import Mratio
+from algorithms.common import load_balance_allocation, system_scale_allocation
+from algorithms.common import rack_scale_allocation, remote_memory_aware_allocation
+from algorithms.common import random_rack_aware_allocation
+from utils.utils import interpolate
 
 class CSVReader(object):
   def __init__(self, filename, cluster_config):
@@ -17,23 +22,34 @@ class CSVReader(object):
     self.filename = filename
     self.offset = 0
     self.number = 0
+    self.time_series = cluster_config.time_series
+    
     if cluster_config.offset > 0:
       self.offset = cluster_config.offset
     if cluster_config.number > 0:
       self.number = cluster_config.number
       
     df = pd.read_csv(self.filename)
+    
+    if self.time_series:
+      df['memory'] = df['memory'].apply(eval)
+      df['memory'] = df.apply(lambda x: interpolate(x['memory'], x['duration']), axis=1)
 
     job_configs = []
     for i in range(len(df)):
       series = df.iloc[i]
       jobid = series.jobid
       submit = series.submit
-      nnodes = series.nnodes
-      memory = series.memory
       duration = series.duration
+      nnodes = series.nnodes
+      if self.time_series:
+        max_memory = series.max_memory
+        memory = series.memory
+      else:
+        max_memory = series.memory
+        memory = []
 
-      job_configs.append(JobConfig(jobid, submit, nnodes, memory, duration))
+      job_configs.append(JobConfig(jobid, submit, nnodes, max_memory, memory, duration))
 
     job_configs.sort(key=attrgetter('submit'))
 
@@ -69,19 +85,20 @@ class ClusterConfigReader(object):
     self.raw_id = False                             # use raw job IDs in job configurations
     self.offset = 0                                 # offset in the job configuration file
     self.number = 0                                 # number of jobs to be loaded
-    self.disaggregateion = False                    # disaggregation option
-    self.rack_scale = False                         # rack scale disaggregation option
     self.total_racks = 6                            # total number of racks
-    self.compute_nodes_per_rack = 240               # number of compute nodes in each rack
+    self.compute_nodes_per_rack = 200               # number of compute nodes in each rack
     self.memory_nodes_per_rack = 0                  # number of memory nodes in each rack
     self.memory_node_memory_capacity = 512          # memory capacity of the compute node (in GB)
     self.compute_node_memory_capacity = 0           # memory capacity of the memory node (in GB)
-    self.memory_granularity = 2                     # memory allocation granularity (in GB)
+    self.memory_granularity = 1                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
-    self.backfill = False                           # backfill option
+    self.allocation_func = load_balance_allocation  # default allocation function
+    self.disaggregation = False                     # disaggregation option
+    self.backfill = True                            # backfill option
     self.timeout_threshold = 36000                  # timeout threshold
-    self.warmup_threshold = 5000                    # warmup threshold
     self.valid_algorithms = self.get_valid_algorithms
+    self.valid_allocations = ['load_balance', 'rack_scale', 'system_scale', 'remote_memory_aware', 'random_rack_aware']
+    self.time_series = False
     
     with open(self.filename, 'r') as f:
       try:
@@ -104,11 +121,7 @@ class ClusterConfigReader(object):
       
     # update disaggregation option
     if 'disaggregation' in self.config:
-      self.disaggregation = self.config['disaggregation']      
-    
-    # update rack scale disaggregation option
-    if 'rack_scale' in self.config:
-      self.rack_scale = self.config['rack_scale']
+      self.disaggregation = self.config['disaggregation']
       
     # update default values
     if 'racks' in self.config:
@@ -153,8 +166,28 @@ class ClusterConfigReader(object):
         self.algorithm = UNICEP()
       elif self.config['algorithm'] == 'f1':
         self.algorithm = F1()
+      elif self.config['algorithm'] == 'fair':
+        self.algorithm = Fair()
+      elif self.config['algorithm'] == 'mratio':
+        self.algorithm = Mratio()
       else:
         print(f'Invalid algorithm name. Please choose one from {self.valid_algorithms}.')
+        exit(1)
+    
+    # load allocation function
+    if 'allocation_func' in self.config:
+      if self.config['allocation_func'] == 'load_balance':
+        self.allocation_func = load_balance_allocation
+      elif self.config['allocation_func'] == 'rack_scale':
+        self.allocation_func = rack_scale_allocation
+      elif self.config['allocation_func'] == 'system_scale':
+        self.allocation_func = system_scale_allocation
+      elif self.config['allocation_func'] == 'remote_memory_aware':
+        self.allocation_func = remote_memory_aware_allocation
+      elif self.config['allocation_func'] == 'random_rack_aware':
+        self.allocation_func = random_rack_aware_allocation
+      else:
+        print(f'Invalid allocation function name. Please choose one from {self.valid_allocations}.')
         exit(1)
     
     if 'backfill' in self.config:
@@ -162,9 +195,9 @@ class ClusterConfigReader(object):
       
     if 'timeout_threshold' in self.config:
       self.timeout_threshold = self.config['timeout_threshold']
-    
-    if 'warmup_threshold' in self.config:
-      self.warmup_threshold = self.config['warmup_threshold']
+      
+    if 'time_series' in self.config:
+      self.time_series = self.config['time_series']
         
     # update monitoring option
     if 'monitor' in self.config:
@@ -192,8 +225,9 @@ class ClusterConfigReader(object):
                               + "M" + str(self.memory_nodes_per_rack) \
                               + "-" + str(self.memory_node_memory_capacity) + "GB_"\
                               + self.config['algorithm'] \
+                              + "-" + self.config['allocation_func'] \
                               + "_BF-" + str(self.backfill).lower() \
-                              + "_Rack-" + str(self.rack_scale).lower() + ".json"
+                              + ".json"
       self.jobs_summary_file = f"./monitoring/{self.metric_folder}/job_summary_" \
                               + "J" + str(self.offset) \
                               + "-" + str(self.number) \
@@ -202,8 +236,9 @@ class ClusterConfigReader(object):
                               + "M" + str(self.memory_nodes_per_rack) \
                               + "-" + str(self.memory_node_memory_capacity) + "GB_"\
                               + self.config['algorithm'] \
+                              + "-" + self.config['allocation_func'] \
                               + "_BF-" + str(self.backfill).lower() \
-                              + "_Rack-" + str(self.rack_scale).lower() + ".json"
+                              + ".json"
   
   @property                        
   def get_valid_algorithms(self):
@@ -212,4 +247,5 @@ class ClusterConfigReader(object):
     files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
     valid_algorithms = [f.replace('.py', '') for f in files if f not in default_files]
     return valid_algorithms
+
           

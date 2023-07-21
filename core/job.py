@@ -1,14 +1,15 @@
 class JobConfig(object):
-  def __init__(self, jobid, submit, nnodes, max_node_memory, duration):
+  def __init__(self, jobid, submit, nnodes, max_memory, memory, duration):
     self.id = jobid
     self.submit = submit
     self.nnodes = nnodes
-    self.memory = max_node_memory
+    self.memory = memory
+    self.max_memory = max_memory
     self.duration = duration
 
 class Job(object):
   idx = 0
-  def __init__(self, env, job_config, raw_id, warmup_threshold):
+  def __init__(self, env, job_config, raw_id):
     self.env = env
     self.cluster = None
     
@@ -20,6 +21,7 @@ class Job(object):
     self.submit = job_config.submit
     self.nnodes = job_config.nnodes
     self.memory = job_config.memory
+    self.max_memory = job_config.max_memory
 
     self.duration = job_config.duration
     self.scale = self.nnodes * self.duration
@@ -30,6 +32,10 @@ class Job(object):
     self.allocated_memory_nodes = None
     self.process = None
     
+    self.remote_memory_ratio = 0
+    self.total_memory_scale = sum(self.memory)  # the amount of total memory allocated to this job * duration
+    self.remote_memory_scale = 0 # the amount of remote memory allocated to this job * duration of remote memory access
+    
     self.cross_rack_allocation_counts = 0
     self.cross_rack_allocation_capacity = 0
 
@@ -39,11 +45,17 @@ class Job(object):
     self.finish = 0
     self.failed = False
     
-    self.warmup_threshold = warmup_threshold
+    self.stall = 0
     Job.idx += 1
     
   def attach(self, cluster):
     self.cluster = cluster
+    # After attaching to the cluster, we can know the job's remote memory scale
+    compute_node_memory_capacity = self.cluster.compute_node_memory_capacity
+    remote_memory_records = [(m-compute_node_memory_capacity) for m in self.memory if m > compute_node_memory_capacity]
+    self.remote_memory_scale = sum(remote_memory_records)
+    if compute_node_memory_capacity < self.max_memory:
+      self.remote_memory_ratio = self.max_memory/compute_node_memory_capacity
     
   def add_statistic(self, count, capacity):
     self.cross_rack_allocation_counts += count
@@ -65,10 +77,9 @@ class Job(object):
         remote_memory = remote_memory_record['remote_memory']
         memory_node.deallocate_memory(self, remote_memory)
         
-    # update cross-rack allocation statistics; only count the jobs after warmup_threshold
-    if self.submit >= self.warmup_threshold:
-      self.cluster.remove_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
-                                                          self.cross_rack_allocation_capacity)
+    # update cross-rack allocation statistics
+    self.cluster.remove_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
+                                                        self.cross_rack_allocation_capacity)
         
   def fail(self):
     self.failed = True
@@ -97,9 +108,8 @@ class Job(object):
         remote_memory = remote_memory_record['remote_memory']
         memory_node.allocate_memory(self, remote_memory)
     
-    # update cross-rack allocation statistics; only count the jobs after warmup_threshold
-    if self.submit >= self.warmup_threshold:
-      self.cluster.add_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
+    # update cross-rack allocation statistics
+    self.cluster.add_cross_rack_allocation_statistic(self.cross_rack_allocation_counts, 
                                                       self.cross_rack_allocation_capacity)
 
     self.process = self.env.process(self.do_work())

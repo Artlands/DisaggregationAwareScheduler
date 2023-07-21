@@ -4,26 +4,28 @@ from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
 
 
-class F1(Algorithm):
+class Mratio(Algorithm):
   """
     job submit: s_i,
     job duration: r_i,
     job size (nnodes): n_i, nnodes
     job scale: a_i, nnodes * duration
     job waiting time: w_i, clock - s_i
-    
-    piority function: f = log10(r_i) * n_i + 870 * log10(s_i)
+    job total memory scale: tm_i
+    job remote memory scale: rm_i
+    piority function: f = w_i/r_i
   """
   def __call__(self, cluster, clock, backfill, allocation_func):
     # Get jobs in the waiting queue
     jobs = cluster.jobs_in_waiting_queue
     
-    # Calculate the priority of each job using the F1 formula
+    # Calculate the priority of each job using the memory ratio formula
     for job in jobs:
-      job.priority = math.log10(job.duration) * job.nnodes + 870 * math.log10(job.submit+1)
+      # job.priority = job.remote_memory_ratio + (clock - job.submit)/job.duration
+      job.priority = (clock - job.submit)/job.duration
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'))
+    jobs.sort(key=attrgetter('priority'), reverse=True)
     if(len(jobs) == 0):
       return None, []
     else:

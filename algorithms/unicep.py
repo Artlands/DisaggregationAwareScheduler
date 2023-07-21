@@ -2,7 +2,6 @@ import math
 from operator import attrgetter
 from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
-from algorithms.common import rack_scale_allocation, system_scale_allocation
 
 
 class UNICEP(Algorithm):
@@ -15,17 +14,10 @@ class UNICEP(Algorithm):
     
     piority function: f = -w_i/(log(n_i) * r_i), provides fast turnaround for small jobs
   """
-  def __call__(self, cluster, clock, backfill, disaggregation, rack_scale):
-    if disaggregation:
-      if rack_scale:
-        allocation_func = rack_scale_allocation
-      else:
-        allocation_func = system_scale_allocation
-    else:
-      allocation_func = load_balance_allocation
-      
+  def __call__(self, cluster, clock, backfill, allocation_func):
+    # Get jobs in the waiting queue
     jobs = cluster.jobs_in_waiting_queue
-    
+
     # Calculate the priority of each job using the WFP3 formula
     for job in jobs:
       job.priority = -((clock - job.submit)/(math.log(job.nnodes) * job.duration))

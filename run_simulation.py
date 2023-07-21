@@ -29,15 +29,14 @@ def main():
   
   # Setup algorithm
   algorithm = cluster_config.algorithm
+  allocation_func = cluster_config.allocation_func
   backfill  = cluster_config.backfill
   timeout_threshold = cluster_config.timeout_threshold
-  warmup_threshold = cluster_config.warmup_threshold
-  disaggregation = cluster_config.disaggregation
-  rack_scale = cluster_config.rack_scale
+  time_series = cluster_config.time_series
 
   # Loading jobs
   if args.job_config:
-    csv_reader = CSVReader(f'./configs/job/{args.job_config}', cluster_config)
+    csv_reader = CSVReader(f'{args.job_config}', cluster_config)
   else:
     csv_reader = CSVReader('./configs/job/job_configs_3days.csv', cluster_config)
   job_configs = csv_reader.generate()
@@ -49,12 +48,11 @@ def main():
   cluster = Cluster(env, cluster_config)
 
   # Job broker: submits job to the cluster
-  job_broker = Broker(env, job_configs, raw_id, warmup_threshold)
+  job_broker = Broker(env, job_configs, raw_id)
 
   # Job scheduler
-  scheduler = Scheduler(env, algorithm, backfill, 
-                        timeout_threshold, warmup_threshold, 
-                        disaggregation, rack_scale)
+  scheduler = Scheduler(env, algorithm, allocation_func, backfill, 
+                        timeout_threshold, time_series)
 
   # Create simulation for the current settings
   simulation = Simulation(env, cluster, job_broker, scheduler, 

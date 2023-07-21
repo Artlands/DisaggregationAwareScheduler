@@ -162,6 +162,18 @@ class Cluster(object):
         ls.append(job)
     ls.sort(key=operator.attrgetter('submit'))
     return ls
+  
+  @property
+  def remote_memory_in_use(self):
+    total_rmt_m_in_use = 0
+    running_jobs = self.running_jobs
+    for job in running_jobs:
+      m_use_idx = self.env.now - job.start
+      m_use = job.memory[m_use_idx]
+      if m_use > self.compute_node_memory_capacity:
+        rmt_m_use = m_use - self.compute_node_memory_capacity
+        total_rmt_m_in_use += rmt_m_use*job.nnodes
+    return total_rmt_m_in_use
 
   @property
   def state(self):
@@ -181,6 +193,7 @@ class Cluster(object):
       'cross_rack_allocation_counts': self.cross_rack_allocation_counts,
       'cross_rack_allocation_capacity': self.cross_rack_allocation_capacity,
       'compute_nodes_utilization': (len(self.total_compute_nodes) - len(self.total_free_compute_nodes))/(len(self.total_compute_nodes)),
+      'total_remote_memory_in_use': int(self.remote_memory_in_use),
       'total_local_memory_utilization': (self.total_local_memory_capacity - self.total_local_free_memory)/self.total_local_memory_capacity,
       'total_remote_memory_utilization': total_remote_memory_utilization
     }
@@ -204,25 +217,35 @@ class Cluster(object):
         'start': int(job.start),
         'finish': int(job.finish),
         'nnodes': int(job.nnodes),
-        'memory': int(job.memory),
+        'max_memory': int(job.max_memory),
         'duration': int(job.duration),
         'slowdown': job.slowdown,
         'failed': False,
-        'reason': None
+        'reason': None,
+        'stall': job.stall,
+        'total_memory_scale': int(job.total_memory_scale),
+        'remote_memory_scale': int(job.remote_memory_scale),
+        'cross_rack_allocation_counts': job.cross_rack_allocation_counts,
+        'cross_rack_allocation_capacity': job.cross_rack_allocation_capacity
       }
     for record in self.failed_jobs:
       job = record['job']
-      reasone = record['reason']
+      reason = record['reason']
       job_id_str = str(job.id)
       jobs_summary[job_id_str] = {
         'submit': int(job.submit),
         'start': 0,
         'finish': 0,
         'nnodes': int(job.nnodes),
-        'memory': int(job.memory),
+        'max_memory': int(job.max_memory),
         'duration': 0,
         'slowdown': 1,
         'failed': True,
-        'reason': reasone
+        'reason': reason,
+        'stall': job.stall,
+        'total_memory_scale': int(job.total_memory_scale),
+        'remote_memory_scale': int(job.remote_memory_scale),
+        'cross_rack_allocation_counts': job.cross_rack_allocation_counts,
+        'cross_rack_allocation_capacity': job.cross_rack_allocation_capacity
       }
     return jobs_summary

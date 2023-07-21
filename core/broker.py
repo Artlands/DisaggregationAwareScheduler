@@ -4,7 +4,7 @@ from core.job import Job
 
 class Broker(object):
   job_cls = Job
-  def __init__(self, env, jobs_configs, raw_id = True, warmup_threshold=0):
+  def __init__(self, env, jobs_configs, raw_id = True):
     print(f'Initializing job broker')
     self.env = env
     self.simulation = None
@@ -12,7 +12,6 @@ class Broker(object):
     self.destroyed = False
     self.jobs_configs = jobs_configs
     self.raw_id = raw_id
-    self.warmup_threshold = warmup_threshold
 
   def attach(self, simulation):
     self.simulation = simulation
@@ -26,20 +25,20 @@ class Broker(object):
     for job_config in self.jobs_configs:
       assert job_config.submit >=self.env.now
       yield self.env.timeout(job_config.submit - self.env.now)
-      job = Broker.job_cls(self.env, job_config, self.raw_id, self.warmup_threshold)
+      job = Broker.job_cls(self.env, job_config, self.raw_id)
       job.attach(self.cluster)
       
       if self.cluster.job_status == True:
-        print(f'Job {job.id} submits time: {self.env.now}, nnode: {job.nnodes}, memory: {job.memory}')
+        print(f'Job {job.id} submits time: {self.env.now}, nnode: {job.nnodes}, max memory: {job.max_memory}')
       
       # Check if job requests more nodes than the cluster has
       if job.nnodes > len(self.cluster.total_compute_nodes):
         self.cluster.add_failed_jobs(job, 'out-of-available-nodes')
       else:
         # Check if job requests more memories than the cluster has   
-        if job.memory > self.cluster.compute_node_memory_capacity:
+        if job.max_memory > self.cluster.compute_node_memory_capacity:
           if self.cluster.disaggregation:
-            remote_memory = job.memory - self.cluster.compute_node_memory_capacity
+            remote_memory = job.max_memory - self.cluster.compute_node_memory_capacity
             remote_memory_round_up = self.resource_round_up(remote_memory)
             memory_node_memory_capacity = self.cluster.memory_node_memory_capacity
             memory_units_supported_per_node = int(math.floor(memory_node_memory_capacity/remote_memory_round_up))

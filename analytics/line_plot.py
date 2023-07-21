@@ -33,18 +33,23 @@ def ts_plot(all_dfs, metric, tracenames):
   ax.legend(frameon=False, fontsize=10)
   
 
-def line_comp_plot(lists, names, xticks):  
+def line_comp_plot(lists, names, xticks, title, baseline = None, yscale='linear'):  
   w,h = figaspect(2/3)
   fig, ax0 = plt.subplots(figsize=(w,h))
   ax1 = ax0.twinx()
 
-  ax0.plot(xticks, lists[0], label=names[0], color=colors[0])
-  ax1.plot(xticks, lists[1], label=names[1], color=colors[1])
+  ax0.plot(xticks, lists[0], label=names[0], color=colors[1])
+  ax1.plot(xticks, lists[1], label=names[1], color=colors[2])
+  
+  if baseline:
+    # plot horizontal line
+    ax1.axhline(y=baseline, color=colors[0], linestyle='--', label='baseline')
   
   ax0.yaxis.grid(linestyle='--')
   
   ax0.set_ylabel(names[0])
   ax1.set_ylabel(names[1])
+  ax1.set_yscale(yscale)
 
   ax0.set_xlabel("Memory Node Capacity (TB) per Rack")
   # ax0.legend(frameon=False, fontsize=10)
@@ -52,18 +57,46 @@ def line_comp_plot(lists, names, xticks):
   lines0, labels0 = ax0.get_legend_handles_labels()
   lines1, labels1 = ax1.get_legend_handles_labels()
   ax1.legend(lines1 + lines0, labels1 + labels0, frameon=False, fontsize=10)
+  plt.title(title)
   
 
-def line_single_plot(lists, names, xticks):  
+def line_comp_plot_rs(lists, names, xticks, title, yscale='linear', baseline = None):  
+  w,h = figaspect(2/3)
+  fig, ax = plt.subplots(figsize=(w,h))
+  
+  ax.plot(xticks, lists[0], label=names[0], color=colors[1])
+  ax.plot(xticks, lists[1], label=names[1], color=colors[2])
+  
+  if baseline:
+    # plot horizontal line
+    ax.axhline(y=baseline, color=colors[0], linestyle='--', label='baseline')
+  
+  ax.yaxis.grid(linestyle='--')  
+  ax.set_ylabel(names[0].split('(')[0])
+  ax.set_yscale(yscale)
+
+  ax.set_xlabel("Memory Node Capacity (TB) per Rack")
+  ax.legend(frameon=False, fontsize=10)
+  plt.title(title)
+  
+
+def line_single_plot(lists, names, xticks, title, baseline = None, yscale='linear'):  
   w,h = figaspect(2/3)
   fig, ax0 = plt.subplots(figsize=(w,h))
 
-  ax0.plot(xticks, lists[0], label=names[0], color=colors[0])
+  ax0.plot(xticks, lists[0], label=names[0], color=colors[1])
+  
+  if baseline:
+    # plot horizontal line
+    ax0.axhline(y=baseline, color=colors[0], linestyle='--', label=f'baseline ({baseline:.2f})')
+    # convert baseline to floating point with two decimal places
+    
   
   ax0.yaxis.grid(linestyle='--')
   
   ax0.set_ylabel(names[0])
-
+  ax0.set_yscale(yscale)
   ax0.set_xlabel("Memory Node Capacity (TB) per Rack")
   ax0.legend(frameon=False, fontsize=10)
+  plt.title(title)
   

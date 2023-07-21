@@ -35,8 +35,10 @@ class Monitor(object):
     print('Writing cluster state to file')
     with open(self.cluster_state_file, 'w') as f:
       json.dump(self.cluster_state, f, indent=4)
-  
+     
+      
   def write_jobs_summary(self):
     print('Writing jobs summary to file')
+    print(self.jobs_summary)
     with open(self.jobs_summary_file, 'w') as f:
       json.dump(self.jobs_summary, f, indent=4)

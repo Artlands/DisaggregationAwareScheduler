@@ -1,7 +1,6 @@
 from operator import attrgetter
 from core.algorithm import Algorithm
 from algorithms.common import load_balance_allocation, backfill_plan
-from algorithms.common import rack_scale_allocation, system_scale_allocation
 
 
 class FirstComeFirstServe(Algorithm):
@@ -13,16 +12,8 @@ class FirstComeFirstServe(Algorithm):
      
      piority function: f = s_i
   """
-  def __call__(self, cluster, clock, backfill, disaggregation, rack_scale):
-    if disaggregation:
-      if rack_scale:
-        allocation_func = rack_scale_allocation
-      else:
-        allocation_func = system_scale_allocation
-    else:
-      allocation_func = load_balance_allocation
-      # print(f'Using load balance allocation in FCFS')
-      
+  def __call__(self, cluster, clock, backfill, allocation_func):
+    # Get jobs in the waiting queue
     jobs = cluster.jobs_in_waiting_queue
 
     # Calculate the priority of each job using the FirstComeFirstServe formula

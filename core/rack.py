@@ -53,6 +53,8 @@ class Rack(object):
     for node in self.compute_nodes:
       if not node.allocated:
         free_compute_nodes.append(node)
+    # order the compute nodes by their id
+    free_compute_nodes.sort(key=lambda x: x.id)
     return free_compute_nodes
 
   @property

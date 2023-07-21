@@ -5,7 +5,7 @@
 gen_config:
 	python ./utils/config_gen.py 
 
-all: gen_config run
+all: run
 
 run: gen_config
 	bash run_bf.sh

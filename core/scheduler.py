@@ -1,22 +1,20 @@
 import random
 from algorithms.fcfs import FirstComeFirstServe
+from utils.utils import interpolate
 
 class Scheduler(object):
-  def __init__(self, env, algorithm, backfill, 
-              warmup_threshold, timeout_threshold, 
-              disaggregation, rack_scale):
+  def __init__(self, env, algorithm, allocation_func, backfill, 
+               timeout_threshold, time_series):
     print(f'Initializing scheduler')
     self.env = env
     self.algorithm = algorithm
+    self.allocation_func = allocation_func
     self.backfill = backfill
-    self.disaggregation = disaggregation
-    self.rack_scale = rack_scale
+    self.time_series = time_series
     self.simulation = None
     self.cluster = None
     self.destroyed = False
     self.timeout_threshold = timeout_threshold
-    self.warmup_threshold = warmup_threshold
-    self.warmup_algorithm = FirstComeFirstServe()
 
   def attach(self,simulation):
     self.simulation = simulation
@@ -28,15 +26,14 @@ class Scheduler(object):
       # to prevent from simulation running forever in some cases
       for job in self.cluster.jobs_in_waiting_queue:
         wait_time = self.env.now - job.submit
-        if wait_time > self.timeout_threshold:
+        if self.timeout_threshold != 0 and wait_time > self.timeout_threshold:
           job.fail()
           self.cluster.add_failed_jobs(job, 'timeout')
       
       # Schedule jobs
-      if self.env.now > self.warmup_threshold:
-        job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, self.backfill, self.disaggregation, self.rack_scale)
-      else:
-        job, compute_memory_node_tuples = self.warmup_algorithm(self.cluster, self.env.now, False, False, False)
+      job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, 
+                                                        self.backfill, self.allocation_func)
+      
       if (job == None):
         break
       else:
@@ -73,8 +70,12 @@ class Scheduler(object):
     memory_nodes = list(memory_nodes_dict.values())
     
     if memory_nodes:
-      # Remote memory ratio, the larger the greater slowdown
-      rm_ratio = 1 - self.cluster.compute_node_memory_capacity/job.memory
+      # if self.time_series:
+      #   # Remote memory ratio, the larger the greater slowdown. We consider the temporal characteristics of the memory
+      #   rm_ratio = job.remote_memory_scale/job.total_memory_scale
+      # else:
+      rm_ratio = 1 - self.cluster.compute_node_memory_capacity/job.max_memory
+      
       # Distance ratio, the larger the greater slowdowns
       ds_ratio = distance
       
@@ -86,6 +87,10 @@ class Scheduler(object):
     # Adjust job duration and slowdown
     job.slowdown = slowdown
     job.duration = int(job.duration * (slowdown + 1))
+    
+    # Adjust job memory records by interpolating the memory usage
+    if slowdown > 0 and self.time_series:
+      job.memory = interpolate(job.memory, job.duration)
     
     return compute_nodes, memory_nodes
   
