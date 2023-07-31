@@ -11,9 +11,10 @@ from algorithms.unicep import UNICEP
 from algorithms.f1 import F1
 from algorithms.fair import Fair
 from algorithms.mratio import Mratio
-from algorithms.common import load_balance_allocation, system_scale_allocation
-from algorithms.common import rack_scale_allocation, remote_memory_aware_allocation
-from algorithms.common import random_rack_aware_allocation
+from algorithms.fm import FM
+from algorithms.fm2 import FM2
+from algorithms.fm3 import FM3
+from algorithms.common import *
 from utils.utils import interpolate
 
 class CSVReader(object):
@@ -92,12 +93,12 @@ class ClusterConfigReader(object):
     self.compute_node_memory_capacity = 0           # memory capacity of the memory node (in GB)
     self.memory_granularity = 1                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
-    self.allocation_func = load_balance_allocation  # default allocation function
+    self.allocation_func = system_balance_allocation  # default allocation function
     self.disaggregation = False                     # disaggregation option
     self.backfill = True                            # backfill option
     self.timeout_threshold = 36000                  # timeout threshold
     self.valid_algorithms = self.get_valid_algorithms
-    self.valid_allocations = ['load_balance', 'rack_scale', 'system_scale', 'remote_memory_aware', 'random_rack_aware']
+    self.valid_allocations = ['system_balance', 'system_random', 'rack_balance', 'rack_random', 'rack_memory_aware']
     self.time_series = False
     
     with open(self.filename, 'r') as f:
@@ -170,22 +171,28 @@ class ClusterConfigReader(object):
         self.algorithm = Fair()
       elif self.config['algorithm'] == 'mratio':
         self.algorithm = Mratio()
+      elif self.config['algorithm'] == 'fm':
+        self.algorithm = FM()
+      elif self.config['algorithm'] == 'fm2':
+        self.algorithm = FM2()
+      elif self.config['algorithm'] == 'fm3':
+        self.algorithm = FM3()
       else:
         print(f'Invalid algorithm name. Please choose one from {self.valid_algorithms}.')
         exit(1)
     
     # load allocation function
     if 'allocation_func' in self.config:
-      if self.config['allocation_func'] == 'load_balance':
-        self.allocation_func = load_balance_allocation
-      elif self.config['allocation_func'] == 'rack_scale':
-        self.allocation_func = rack_scale_allocation
-      elif self.config['allocation_func'] == 'system_scale':
-        self.allocation_func = system_scale_allocation
-      elif self.config['allocation_func'] == 'remote_memory_aware':
-        self.allocation_func = remote_memory_aware_allocation
-      elif self.config['allocation_func'] == 'random_rack_aware':
-        self.allocation_func = random_rack_aware_allocation
+      if self.config['allocation_func'] == 'system_balance':
+        self.allocation_func = system_balance_allocation
+      elif self.config['allocation_func'] == 'system_random':
+        self.allocation_func = system_random_allocation
+      elif self.config['allocation_func'] == 'rack_balance':
+        self.allocation_func = rack_balance_allocation
+      elif self.config['allocation_func'] == 'rack_random':
+        self.allocation_func = rack_random_allocation
+      elif self.config['allocation_func'] == 'rack_memory_aware':
+        self.allocation_func = rack_memory_aware_allocation
       else:
         print(f'Invalid allocation function name. Please choose one from {self.valid_allocations}.')
         exit(1)

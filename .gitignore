@@ -139,3 +139,4 @@ tmp*.py
 *.ipynb
 *.png
 *.yaml
+*.out

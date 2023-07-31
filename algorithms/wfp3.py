@@ -1,6 +1,6 @@
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import backfill_plan
 
 
 class WFP3(Algorithm):
@@ -21,10 +21,10 @@ class WFP3(Algorithm):
           
     # Calculate the priority of each job using the WFP3 formula
     for job in jobs:
-      job.priority = -((clock - job.submit)/job.duration)**3 * job.nnodes
+      job.priority = ((clock - job.submit)/job.duration)**3 * job.nnodes
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'))
+    jobs.sort(key=attrgetter('priority'), reversed=True)
     if(len(jobs) == 0):
       return None, []
     else:

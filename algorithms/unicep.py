@@ -1,7 +1,7 @@
 import math
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import backfill_plan
 
 
 class UNICEP(Algorithm):
@@ -20,10 +20,10 @@ class UNICEP(Algorithm):
 
     # Calculate the priority of each job using the WFP3 formula
     for job in jobs:
-      job.priority = -((clock - job.submit)/(math.log(job.nnodes) * job.duration))
+      job.priority = (clock - job.submit)/(math.log(job.nnodes) * job.duration)
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'))
+    jobs.sort(key=attrgetter('priority'), reverse=True)
     if(len(jobs) == 0):
       return None, []
     else:

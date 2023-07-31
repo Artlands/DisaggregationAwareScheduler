@@ -1,7 +1,7 @@
 import math
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import backfill_plan
 
 
 class F1(Algorithm):
@@ -23,7 +23,7 @@ class F1(Algorithm):
       job.priority = math.log10(job.duration) * job.nnodes + 870 * math.log10(job.submit+1)
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'))
+    jobs.sort(key=attrgetter('priority'), reversed=True)
     if(len(jobs) == 0):
       return None, []
     else:

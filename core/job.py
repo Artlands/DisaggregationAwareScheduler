@@ -56,6 +56,8 @@ class Job(object):
     self.remote_memory_scale = sum(remote_memory_records)
     if compute_node_memory_capacity < self.max_memory:
       self.remote_memory_ratio = self.max_memory/compute_node_memory_capacity
+    else:
+      self.remote_memory_ratio = 1
     
   def add_statistic(self, count, capacity):
     self.cross_rack_allocation_counts += count

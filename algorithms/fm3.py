@@ -1,27 +1,30 @@
+import math
 from operator import attrgetter
 from core.algorithm import Algorithm
 from algorithms.common import backfill_plan
 
 
-class LeastScaleFirst(Algorithm):
+class FM3(Algorithm):
   """
-    job submit: s_i, 
+    job submit: s_i,
     job duration: r_i,
     job size (nnodes): n_i, nnodes
     job scale: a_i, nnodes * duration
-    
-    piority function: f = a_i
+    job waiting time: w_i, clock - s_i
+    job total memory scale: tm_i
+    job remote memory scale: rm_i
+    piority function: f = w_i/r_i
   """
   def __call__(self, cluster, clock, backfill, allocation_func):
     # Get jobs in the waiting queue
     jobs = cluster.jobs_in_waiting_queue
     
-    # Calculate the priority of each job using the LeastScaleFirst formula
+    # Calculate the priority of each job using the memory ratio formula
     for job in jobs:
-      job.priority = job.scale
+      job.priority = (clock - job.submit)/((math.log10(job.nnodes) + 1) * job.duration * job.remote_memory_ratio)
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'))
+    jobs.sort(key=attrgetter('priority'), reverse=True)
     if(len(jobs) == 0):
       return None, []
     else:

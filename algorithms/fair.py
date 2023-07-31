@@ -1,7 +1,7 @@
 import math
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import backfill_plan
 
 
 class Fair(Algorithm):

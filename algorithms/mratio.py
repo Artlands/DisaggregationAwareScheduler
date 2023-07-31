@@ -1,7 +1,7 @@
 import math
 from operator import attrgetter
 from core.algorithm import Algorithm
-from algorithms.common import load_balance_allocation, backfill_plan
+from algorithms.common import backfill_plan
 
 
 class Mratio(Algorithm):
@@ -21,8 +21,8 @@ class Mratio(Algorithm):
     
     # Calculate the priority of each job using the memory ratio formula
     for job in jobs:
-      # job.priority = job.remote_memory_ratio + (clock - job.submit)/job.duration
-      job.priority = (clock - job.submit)/job.duration
+      job.priority = 1/job.remote_memory_ratio
+      # job.priority = (clock - job.submit)/job.duration
       
     # Sort jobs by priority
     jobs.sort(key=attrgetter('priority'), reverse=True)
