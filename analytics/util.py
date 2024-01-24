@@ -3,9 +3,6 @@ import pandas as pd
 
 
 def find_range(df_t, pct = 0.01):
-  # Only keep successful jobs
-  df_t = df_t[df_t['failed'] == False]
-
   # Order the dataframe by the start time
   df_t.sort_values(by=['start'], inplace=False, ascending=True)
 
@@ -72,5 +69,19 @@ def get_metric_list(metric, df_job_list):
   for df in df_job_list:
     avg = [df[i][metric].mean() for i in range(len(df))]
     metric_list.append(avg)
+  return metric_list
+
+def get_metric_list_median(metric, df_job_list):
+  metric_list = []
+  for df in df_job_list:
+    avg = [df[i][metric].median() for i in range(len(df))]
+    metric_list.append(avg)
+  return metric_list
+
+def get_num_records(df_job_list):
+  metric_list = []
+  for df in df_job_list:
+    n = df.shape[0]
+    metric_list.append(n)
   return metric_list
 

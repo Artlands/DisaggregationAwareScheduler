@@ -33,6 +33,7 @@ def main():
   backfill  = cluster_config.backfill
   timeout_threshold = cluster_config.timeout_threshold
   time_series = cluster_config.time_series
+  slowdown_factor = cluster_config.slowdown_factor
 
   # Loading jobs
   if args.job_config:
@@ -51,8 +52,8 @@ def main():
   job_broker = Broker(env, job_configs, raw_id)
 
   # Job scheduler
-  scheduler = Scheduler(env, algorithm, allocation_func, backfill, 
-                        timeout_threshold, time_series)
+  scheduler = Scheduler(env, algorithm, allocation_func, slowdown_factor, 
+                        backfill, timeout_threshold, time_series)
 
   # Create simulation for the current settings
   simulation = Simulation(env, cluster, job_broker, scheduler, 

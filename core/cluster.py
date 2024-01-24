@@ -21,6 +21,7 @@ class Cluster(object):
     self.memory_granularity = cluster_config.memory_granularity
     self.cross_rack_allocation_counts = 0
     self.cross_rack_allocation_capacity = 0
+    self.time_series = cluster_config.time_series
     
     for _ in range(self.total_racks):
       node_configs = []
@@ -168,11 +169,15 @@ class Cluster(object):
     total_rmt_m_in_use = 0
     running_jobs = self.running_jobs
     for job in running_jobs:
-      m_use_idx = self.env.now - job.start
-      m_use = job.memory[m_use_idx]
+      if self.time_series:
+        m_use_idx = self.env.now - job.start
+        m_use = job.memory[m_use_idx]
+      else:
+        m_use = job.max_memory
       if m_use > self.compute_node_memory_capacity:
         rmt_m_use = m_use - self.compute_node_memory_capacity
         total_rmt_m_in_use += rmt_m_use*job.nnodes
+        
     return total_rmt_m_in_use
 
   @property

@@ -3,12 +3,13 @@ from algorithms.fcfs import FirstComeFirstServe
 from utils.utils import interpolate
 
 class Scheduler(object):
-  def __init__(self, env, algorithm, allocation_func, backfill, 
-               timeout_threshold, time_series):
+  def __init__(self, env, algorithm, allocation_func, slowdown_factor, 
+               backfill, timeout_threshold, time_series):
     print(f'Initializing scheduler')
     self.env = env
     self.algorithm = algorithm
     self.allocation_func = allocation_func
+    self.slowdown_factor = slowdown_factor
     self.backfill = backfill
     self.time_series = time_series
     self.simulation = None
@@ -79,10 +80,12 @@ class Scheduler(object):
       # Distance ratio, the larger the greater slowdowns
       ds_ratio = distance
       
-      base_slowdown = self.get_truncated_normal()
-      
-      # Calculate slowdown based on remote memory radio and distance ratio
-      slowdown = round(base_slowdown * ds_ratio * (1 + rm_ratio), 2)
+      if not self.slowdown_factor:
+        base_slowdown = self.get_truncated_normal()
+        # Calculate slowdown based on remote memory radio and distance ratio
+        slowdown = round(base_slowdown * ds_ratio * (1 + rm_ratio), 2)
+      else:
+        slowdown = self.slowdown_factor
     
     # Adjust job duration and slowdown
     job.slowdown = slowdown
@@ -94,7 +97,7 @@ class Scheduler(object):
     
     return compute_nodes, memory_nodes
   
-  def get_truncated_normal(self, mean=0.25, sd=0.1, low=0, upp=0.5):
+  def get_truncated_normal(self, mean=0.22, sd=0.1, low=0, upp=0.55):
     # return truncnorm(
     #     (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
     random.seed(34)

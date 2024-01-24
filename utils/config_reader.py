@@ -94,6 +94,7 @@ class ClusterConfigReader(object):
     self.memory_granularity = 1                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
     self.allocation_func = system_balance_allocation  # default allocation function
+    self.slowdown_factor = None                     # slowdown factor
     self.disaggregation = False                     # disaggregation option
     self.backfill = True                            # backfill option
     self.timeout_threshold = 36000                  # timeout threshold
@@ -196,6 +197,9 @@ class ClusterConfigReader(object):
       else:
         print(f'Invalid allocation function name. Please choose one from {self.valid_allocations}.')
         exit(1)
+        
+    if 'slowdown_factor' in self.config:
+      self.slowdown_factor = self.config['slowdown_factor']
     
     if 'backfill' in self.config:
       self.backfill = self.config['backfill']
@@ -223,29 +227,55 @@ class ClusterConfigReader(object):
       # if ./monitoring/{self.metric_folder} does not exist, create it
       if not os.path.exists(f"./monitoring/{self.metric_folder}"):
         os.makedirs(f"./monitoring/{self.metric_folder}")
-        
-      self.cluster_state_file = f"./monitoring/{self.metric_folder}/cluster_state_" \
-                              + "J" + str(self.offset) \
-                              + "-" + str(self.number) \
-                              + "_C" + str(self.compute_nodes_per_rack)  \
-                              + "-" + str(self.compute_node_memory_capacity) + "GB_" \
-                              + "M" + str(self.memory_nodes_per_rack) \
-                              + "-" + str(self.memory_node_memory_capacity) + "GB_"\
-                              + self.config['algorithm'] \
-                              + "-" + self.config['allocation_func'] \
-                              + "_BF-" + str(self.backfill).lower() \
-                              + ".json"
-      self.jobs_summary_file = f"./monitoring/{self.metric_folder}/job_summary_" \
-                              + "J" + str(self.offset) \
-                              + "-" + str(self.number) \
-                              + "_C" + str(self.compute_nodes_per_rack)  \
-                              + "-" + str(self.compute_node_memory_capacity) + "GB_" \
-                              + "M" + str(self.memory_nodes_per_rack) \
-                              + "-" + str(self.memory_node_memory_capacity) + "GB_"\
-                              + self.config['algorithm'] \
-                              + "-" + self.config['allocation_func'] \
-                              + "_BF-" + str(self.backfill).lower() \
-                              + ".json"
+      
+      if not self.slowdown_factor:
+        self.cluster_state_file = f"./monitoring/{self.metric_folder}/cluster_state_" \
+                                + "J" + str(self.offset) \
+                                + "-" + str(self.number) \
+                                + "_C" + str(self.compute_nodes_per_rack)  \
+                                + "-" + str(self.compute_node_memory_capacity) + "GB_" \
+                                + "M" + str(self.memory_nodes_per_rack) \
+                                + "-" + str(self.memory_node_memory_capacity) + "GB_"\
+                                + self.config['algorithm'] \
+                                + "-" + self.config['allocation_func'] \
+                                + "_BF-" + str(self.backfill).lower() \
+                                + ".json"
+        self.jobs_summary_file = f"./monitoring/{self.metric_folder}/job_summary_" \
+                                + "J" + str(self.offset) \
+                                + "-" + str(self.number) \
+                                + "_C" + str(self.compute_nodes_per_rack)  \
+                                + "-" + str(self.compute_node_memory_capacity) + "GB_" \
+                                + "M" + str(self.memory_nodes_per_rack) \
+                                + "-" + str(self.memory_node_memory_capacity) + "GB_"\
+                                + self.config['algorithm'] \
+                                + "-" + self.config['allocation_func'] \
+                                + "_BF-" + str(self.backfill).lower() \
+                                + ".json"
+      else:
+        self.cluster_state_file = f"./monitoring/{self.metric_folder}/cluster_state_" \
+                                + "J" + str(self.offset) \
+                                + "-" + str(self.number) \
+                                + "_C" + str(self.compute_nodes_per_rack)  \
+                                + "-" + str(self.compute_node_memory_capacity) + "GB_" \
+                                + "M" + str(self.memory_nodes_per_rack) \
+                                + "-" + str(self.memory_node_memory_capacity) + "GB_"\
+                                + self.config['algorithm'] \
+                                + "-" + self.config['allocation_func'] \
+                                + "_BF-" + str(self.backfill).lower() \
+                                + "_SF-" + str(self.slowdown_factor) \
+                                + ".json"
+        self.jobs_summary_file = f"./monitoring/{self.metric_folder}/job_summary_" \
+                                + "J" + str(self.offset) \
+                                + "-" + str(self.number) \
+                                + "_C" + str(self.compute_nodes_per_rack)  \
+                                + "-" + str(self.compute_node_memory_capacity) + "GB_" \
+                                + "M" + str(self.memory_nodes_per_rack) \
+                                + "-" + str(self.memory_node_memory_capacity) + "GB_"\
+                                + self.config['algorithm'] \
+                                + "-" + self.config['allocation_func'] \
+                                + "_BF-" + str(self.backfill).lower() \
+                                + "_SF-" + str(self.slowdown_factor) \
+                                + ".json"
   
   @property                        
   def get_valid_algorithms(self):

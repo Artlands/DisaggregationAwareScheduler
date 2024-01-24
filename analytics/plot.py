@@ -11,7 +11,8 @@ plt.rcParams['ytick.color']='#333F4B'
 plt.rcParams['font.size'] = ftsize
 
 figsize=(12, 8)
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b','#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#1f78b4', '#33a02c']
+# colors = ['#DF6466', '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b','#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#1f78b4', '#33a02c']
+colors = ["#676488", "#DF6466", "#81b29a", "#f4a261"]
 
 def ts_plot(all_dfs, metric, tracenames, save=False):
   ylabel = metric.replace('_', ' ').title()
@@ -69,9 +70,9 @@ def line_comp_plot(lists, names, xticks, title, baseline = None, yscale='linear'
 def line_comp_plot_rs(lists, tracenames, xticks, title, ylabel, yscale='linear', baseline = None, save=False):  
   w,h = figaspect(2/3)
   fig, ax = plt.subplots(figsize=(w,h))
-  
+  markers = ['o', 's', 'v', 'D', 'P', 'X', 'd', 'p', 'x', 'h', 'H', '8']
   for i, df in enumerate(lists):
-    ax.plot(xticks, df, label=tracenames[i], color=colors[i+1])
+    ax.plot(xticks, df, label=tracenames[i], color=colors[i+1], marker=markers[i], markersize=4)
   
   if baseline:
     # plot horizontal line

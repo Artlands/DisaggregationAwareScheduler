@@ -103,18 +103,24 @@ def system_random_allocation(job, cluster):
     nnodes = job.nnodes
     
     # Step 1: randomly allocate compute nodes from racks.
-    random.shuffle(racks)
+    # random.shuffle(racks)
+    all_free_compute_nodes = []
+    
     for r in racks:
-      if r.number_of_free_compute_nodes >= nnodes:
-        # This rack has enough free compute nodes
-        candidate_nodes.extend(r.free_compute_nodes[:nnodes])
-        break
-      else:
-        # This rack does not have enough free compute nodes for this job,
-        # allocate all free compute nodes in this rack and continue to the next rack
-        candidate_nodes.extend(r.free_compute_nodes)
-        nnodes -= r.number_of_free_compute_nodes
+      all_free_compute_nodes.extend(r.free_compute_nodes)
+      # if r.number_of_free_compute_nodes >= nnodes:
+      #   # This rack has enough free compute nodes
+      #   candidate_nodes.extend(r.free_compute_nodes[:nnodes])
+      #   break
+      # else:
+      #   # This rack does not have enough free compute nodes for this job,
+      #   # allocate all free compute nodes in this rack and continue to the next rack
+      #   candidate_nodes.extend(r.free_compute_nodes)
+      #   nnodes -= r.number_of_free_compute_nodes
 
+    random.shuffle(all_free_compute_nodes)
+    candidate_nodes = all_free_compute_nodes[:nnodes]
+    
     # Step 2: allocate memory nodes if necessary
     # We have checked the disaggregation option in broker. If disaggregation is
     # unavailable, the jobs that need more memory than compute nodes are failed

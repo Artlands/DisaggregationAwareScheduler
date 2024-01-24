@@ -23,7 +23,7 @@ class F1(Algorithm):
       job.priority = math.log10(job.duration) * job.nnodes + 870 * math.log10(job.submit+1)
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'), reversed=True)
+    jobs.sort(key=attrgetter('priority'), reverse=True)
     if(len(jobs) == 0):
       return None, []
     else:

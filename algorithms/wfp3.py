@@ -24,7 +24,7 @@ class WFP3(Algorithm):
       job.priority = ((clock - job.submit)/job.duration)**3 * job.nnodes
       
     # Sort jobs by priority
-    jobs.sort(key=attrgetter('priority'), reversed=True)
+    jobs.sort(key=attrgetter('priority'), reverse=True)
     if(len(jobs) == 0):
       return None, []
     else:
