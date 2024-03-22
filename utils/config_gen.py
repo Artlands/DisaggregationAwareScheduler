@@ -60,7 +60,7 @@ for mem_node in memory_nodes:
           'number': 0,
           'algorithm': algo,
           'allocation_func': alloc,
-          'slowdown_factor': None,
+          'slowdown_factor': -1,
           'disaggregation': disaggregation,
           'backfill': backfill,
           'timeout_threshold': timeout_threshold,

@@ -44,10 +44,10 @@ class CSVReader(object):
       duration = series.duration
       nnodes = series.nnodes
       if self.time_series:
-        max_memory = series.max_memory
+        max_memory = int(series.max_memory)
         memory = series.memory
       else:
-        max_memory = series.memory
+        max_memory = int(series.memory)
         memory = []
 
       job_configs.append(JobConfig(jobid, submit, nnodes, max_memory, memory, duration))
@@ -94,7 +94,7 @@ class ClusterConfigReader(object):
     self.memory_granularity = 1                     # memory allocation granularity (in GB)
     self.algorithm = FirstComeFirstServe()          # default scheduler algorithm
     self.allocation_func = system_balance_allocation  # default allocation function
-    self.slowdown_factor = None                     # slowdown factor
+    self.slowdown_factor = -1                       # slowdown factor
     self.disaggregation = False                     # disaggregation option
     self.backfill = True                            # backfill option
     self.timeout_threshold = 36000                  # timeout threshold

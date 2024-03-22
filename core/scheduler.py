@@ -80,7 +80,7 @@ class Scheduler(object):
       # Distance ratio, the larger the greater slowdowns
       ds_ratio = distance
       
-      if not self.slowdown_factor:
+      if self.slowdown_factor == -1:
         base_slowdown = self.get_truncated_normal()
         # Calculate slowdown based on remote memory radio and distance ratio
         slowdown = round(base_slowdown * ds_ratio * (1 + rm_ratio), 2)
