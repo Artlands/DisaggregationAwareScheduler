@@ -1,11 +1,12 @@
 class JobConfig(object):
-  def __init__(self, jobid, submit, nnodes, max_memory, memory, duration):
-    self.id = jobid
-    self.submit = submit
-    self.nnodes = nnodes
-    self.memory = memory
+  def __init__(self, jobid, submit, nnodes, max_memory, memory, duration, randomness):
+    self.id         = jobid
+    self.submit     = submit
+    self.nnodes     = nnodes
+    self.memory     = memory
     self.max_memory = max_memory
-    self.duration = duration
+    self.duration   = duration
+    self.randomness = randomness
 
 class Job(object):
   idx = 0
@@ -18,35 +19,36 @@ class Job(object):
     else:
       self.id = Job.idx
     
-    self.submit = job_config.submit
-    self.nnodes = job_config.nnodes
-    self.memory = job_config.memory
+    self.submit     = job_config.submit
+    self.nnodes     = job_config.nnodes
+    self.memory     = job_config.memory
     self.max_memory = job_config.max_memory
+    self.randomness = job_config.randomness
 
     self.duration = job_config.duration
-    self.scale = self.nnodes * self.duration
+    self.scale    = self.nnodes * self.duration
     self.priority = 0
     self.slowdown = 0
 
-    self.allocated_nodes = None
+    self.allocated_nodes        = None
     self.allocated_memory_nodes = None
-    self.process = None
+    self.process                = None
     
     self.remote_memory_ratio = 0
-    self.total_memory_scale = sum(self.memory)  # the amount of total memory allocated to this job * duration
+    self.total_memory_scale  = sum(self.memory)  # the amount of total memory allocated to this job * duration
     self.remote_memory_scale = 0 # the amount of remote memory allocated to this job * duration of remote memory access
     
-    self.cross_rack_allocation_counts = 0
+    self.cross_rack_allocation_counts   = 0
     self.cross_rack_allocation_capacity = 0
 
-    self.started = False
-    self.start = 0
+    self.started  = False
+    self.start    = 0
     self.finished = False
-    self.finish = 0
-    self.failed = False
+    self.finish   = 0
+    self.failed   = False
     
     self.stall = 0
-    Job.idx += 1
+    Job.idx   += 1
     
   def attach(self, cluster):
     self.cluster = cluster

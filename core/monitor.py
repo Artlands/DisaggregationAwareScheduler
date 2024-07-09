@@ -24,6 +24,7 @@ class Monitor(object):
       'cluster_state': self.simulation.cluster.state
     }
     self.cluster_state.append(state)
+    
     if self.cluster_state_file:
       self.write_cluster_state()
 
@@ -36,7 +37,6 @@ class Monitor(object):
     with open(self.cluster_state_file, 'w') as f:
       json.dump(self.cluster_state, f, indent=4)
      
-      
   def write_jobs_summary(self):
     print('Writing jobs summary to file')
     print(self.jobs_summary)

@@ -1,14 +1,12 @@
 .PHONY:
 	all clean
+	
+run: gen
+	bash run_sim.sh
 
 # A Python script that generates a configuration file using the config_gen.py utility.
-gen_config:
+gen:
 	python ./utils/config_gen.py 
-
-all: run
-
-run: gen_config
-	bash run_bf.sh
 
 # A target that removes all .json files in the ./monitoring directory
 clean:

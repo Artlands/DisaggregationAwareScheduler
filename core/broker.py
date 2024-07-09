@@ -6,12 +6,12 @@ class Broker(object):
   job_cls = Job
   def __init__(self, env, jobs_configs, raw_id = True):
     print(f'Initializing job broker')
-    self.env = env
-    self.simulation = None
-    self.cluster = None
-    self.destroyed = False
+    self.env          = env
+    self.simulation   = None
+    self.cluster      = None
+    self.destroyed    = False
     self.jobs_configs = jobs_configs
-    self.raw_id = raw_id
+    self.raw_id       = raw_id
 
   def attach(self, simulation):
     self.simulation = simulation

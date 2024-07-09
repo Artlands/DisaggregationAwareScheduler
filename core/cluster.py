@@ -10,6 +10,7 @@ class Cluster(object):
     self.racks = []
     self.jobs = []
     self.failed_jobs = []
+    self.warm_up_time = 0
     self.node_status = cluster_config.node_status
     self.job_status = cluster_config.job_status
     self.disaggregation = cluster_config.disaggregation
@@ -189,6 +190,7 @@ class Cluster(object):
         - self.total_remote_free_memory)/self.total_remote_memory_capacity
         
     return {
+      'warm_up_time': self.warm_up_time,
       'arrived_jobs': len(self.jobs),
       'finished_jobs': len(self.finished_jobs),
       'failed_jobs': len(self.failed_jobs),
@@ -218,6 +220,7 @@ class Cluster(object):
     for job in self.jobs:
       job_id_str = str(job.id)
       jobs_summary[job_id_str] = {
+        'job_id': job.id,
         'submit': int(job.submit),
         'start': int(job.start),
         'finish': int(job.finish),
@@ -238,13 +241,14 @@ class Cluster(object):
       reason = record['reason']
       job_id_str = str(job.id)
       jobs_summary[job_id_str] = {
+        'job_id': job.id,
         'submit': int(job.submit),
         'start': 0,
         'finish': 0,
         'nnodes': int(job.nnodes),
         'max_memory': int(job.max_memory),
         'duration': 0,
-        'slowdown': 1,
+        'slowdown': 0,
         'failed': True,
         'reason': reason,
         'stall': job.stall,

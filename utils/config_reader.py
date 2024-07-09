@@ -20,9 +20,9 @@ from utils.utils import interpolate
 class CSVReader(object):
   def __init__(self, filename, cluster_config):
     print(f'Loading job configurations from {filename}')
-    self.filename = filename
-    self.offset = 0
-    self.number = 0
+    self.filename    = filename
+    self.offset      = 0
+    self.number      = 0
     self.time_series = cluster_config.time_series
     
     if cluster_config.offset > 0:
@@ -38,23 +38,24 @@ class CSVReader(object):
 
     job_configs = []
     for i in range(len(df)):
-      series = df.iloc[i]
-      jobid = series.jobid
-      submit = series.submit
-      duration = series.duration
-      nnodes = series.nnodes
+      series     = df.iloc[i]
+      jobid      = int(series.jobid)
+      submit     = int(series.submit)
+      duration   = int(series.duration)
+      nnodes     = int(series.nnodes)
+      randomness = series.randomness
+      max_memory = int(series.max_memory)
       if self.time_series:
-        max_memory = int(series.max_memory)
         memory = series.memory
       else:
-        max_memory = int(series.memory)
         memory = []
 
-      job_configs.append(JobConfig(jobid, submit, nnodes, max_memory, memory, duration))
+      job_configs.append(JobConfig(jobid, submit, nnodes, max_memory, 
+                                   memory, duration, randomness))
 
     job_configs.sort(key=attrgetter('submit'))
 
-    self.job_configs = job_configs
+    self.job_configs  = job_configs
     self.total_number = len(df)
 
   def generate(self):
@@ -98,9 +99,11 @@ class ClusterConfigReader(object):
     self.disaggregation = False                     # disaggregation option
     self.backfill = True                            # backfill option
     self.timeout_threshold = 36000                  # timeout threshold
+    self.warm_up_threshold = 0                      # number of jobs used for warm-up period
     self.valid_algorithms = self.get_valid_algorithms
     self.valid_allocations = ['system_balance', 'system_random', 'rack_balance', 'rack_random', 'rack_memory_aware']
     self.time_series = False
+    self.job_trace = None
     
     with open(self.filename, 'r') as f:
       try:
@@ -207,8 +210,14 @@ class ClusterConfigReader(object):
     if 'timeout_threshold' in self.config:
       self.timeout_threshold = self.config['timeout_threshold']
       
+    if 'warm_up_threshold' in self.config:
+      self.warm_up_threshold = self.config['warm_up_threshold']
+      
     if 'time_series' in self.config:
       self.time_series = self.config['time_series']
+      
+    if 'job_trace' in self.config:
+      self.job_trace = self.config['job_trace']
         
     # update monitoring option
     if 'monitor' in self.config:

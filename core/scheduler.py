@@ -1,10 +1,28 @@
 import random
 from algorithms.fcfs import FirstComeFirstServe
+from algorithms.common import system_balance_allocation
 from utils.utils import interpolate
+
+from scipy.interpolate import interp1d
+
+# The following values are based on the experimental results from PARSEC benchmarks
+intra_rack_slowdown = [1.03935594e-01, 1.37285957e+00, 1.37771886e+00, 1.83561765e+00,
+                       4.67776163e+00, 4.83442012e+00, 5.87674881e+00, 1.37825116e+01,
+                       3.06614957e+01, 1.06645952e+02, 1.66840426e+02] 
+inter_rack_slowdown = [  0.75210565,   1.96119392,   3.59254798,   5.37873038,
+                        11.20019087,  12.49451142,  17.857027  ,  25.00913367,
+                        52.94264714, 127.45616256, 318.95031442]
+cdf = [0.09090909, 0.18181818, 0.27272727, 0.36363636, 0.45454545,
+       0.54545455, 0.63636364, 0.72727273, 0.81818182, 0.90909091, 1.        ]
+
+inverse_cdf_intra = interp1d(cdf, intra_rack_slowdown, kind='quadratic', fill_value='extrapolate')
+inverse_cdf_inter = interp1d(cdf, inter_rack_slowdown, kind='quadratic', fill_value='extrapolate')
+
 
 class Scheduler(object):
   def __init__(self, env, algorithm, allocation_func, slowdown_factor, 
-               backfill, timeout_threshold, time_series):
+               backfill, timeout_threshold,  warm_up_threshold, 
+               time_series):
     print(f'Initializing scheduler')
     self.env = env
     self.algorithm = algorithm
@@ -15,7 +33,10 @@ class Scheduler(object):
     self.simulation = None
     self.cluster = None
     self.destroyed = False
+    self.warm_up_jobs_count = 0
+    self.warm_up_scheduler = FirstComeFirstServe()
     self.timeout_threshold = timeout_threshold
+    self.warm_up_threshold = warm_up_threshold
 
   def attach(self,simulation):
     self.simulation = simulation
@@ -30,10 +51,20 @@ class Scheduler(object):
         if self.timeout_threshold != 0 and wait_time > self.timeout_threshold:
           job.fail()
           self.cluster.add_failed_jobs(job, 'timeout')
-      
-      # Schedule jobs
-      job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, 
-                                                        self.backfill, self.allocation_func)
+          
+      # Warm-up period, use first-come-first-serve and backfill to schedule jobs
+      if self.warm_up_jobs_count < self.warm_up_threshold:
+        job, compute_memory_node_tuples = self.warm_up_scheduler(self.cluster, self.env.now, 
+                                                                 True, system_balance_allocation)
+      else:
+        # Get the warm-up time
+        if self.warm_up_jobs_count == self.warm_up_threshold:
+          self.cluster.warm_up_time = self.env.now
+          
+        # Schedule jobs using the specified algorithm
+        job, compute_memory_node_tuples = self.algorithm(self.cluster, self.env.now, 
+                                                         self.backfill, self.allocation_func)
+        
       
       if (job == None):
         break
@@ -41,11 +72,13 @@ class Scheduler(object):
         # Calculate performance slowdown
         compute_nodes, memory_nodes = self.performance_slowdown(job, compute_memory_node_tuples)
         job.run(compute_nodes, memory_nodes)
+        self.warm_up_jobs_count += 1
+        
         
   def performance_slowdown(self, job, compute_memory_node_tuples):
     # Model the performance slowdown based on ratio of remote memory and the distance of the allocated compute nodes to the memory nodes.
     slowdown = 0
-    distance = 0
+    cross_rack = False
     compute_nodes = []
     memory_nodes = []      # {'memory_node': MemoryNode, 'remote_memory': memory_allocated}
     memory_nodes_dict = {} # {'memory_node_id': {'memory_node': MemoryNode, 'remote_memory': memory_allocated} }
@@ -58,15 +91,11 @@ class Scheduler(object):
         else:
           memory_nodes_dict[m_node.id] = {'memory_node': m_node, 'remote_memory': remote_memory}
       
-        # Calculate distance 
-        # if the compute node and memory node are in the same rack, 
-        # distance is 1, otherwise distance is 2
+        # if the compute node and memory node are in different racks, set cross_rack to True
         c_node_rack = c_node.rack.id
         m_node_rack = m_node.rack.id
-        if(c_node_rack == m_node_rack):
-          distance = 1
-        else:
-          distance = 2
+        if(c_node_rack != m_node_rack):
+          cross_rack = True
     
     memory_nodes = list(memory_nodes_dict.values())
     
@@ -77,13 +106,14 @@ class Scheduler(object):
       # else:
       rm_ratio = 1 - self.cluster.compute_node_memory_capacity/job.max_memory
       
-      # Distance ratio, the larger the greater slowdowns
-      ds_ratio = distance
-      
       if self.slowdown_factor == -1:
-        base_slowdown = self.get_truncated_normal()
-        # Calculate slowdown based on remote memory radio and distance ratio
-        slowdown = round(base_slowdown * ds_ratio * (1 + rm_ratio), 2)
+        if cross_rack:
+          base_slowdown = inverse_cdf_inter(job.randomness)
+        else:
+          base_slowdown = inverse_cdf_intra(job.randomness)
+        if base_slowdown < 0:
+          slowdown = 0
+        slowdown = round(base_slowdown/100 * rm_ratio, 2)
       else:
         slowdown = self.slowdown_factor
     
@@ -97,10 +127,8 @@ class Scheduler(object):
     
     return compute_nodes, memory_nodes
   
+  
   def get_truncated_normal(self, mean=0.22, sd=0.1, low=0, upp=0.55):
-    # return truncnorm(
-    #     (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
-    random.seed(34)
     number = random.normalvariate(mean, sd)
     while number < low or number > upp:
       number = random.normalvariate(mean, sd)
