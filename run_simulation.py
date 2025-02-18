@@ -42,7 +42,7 @@ def main():
   if job_trace:
     csv_reader = CSVReader(f'./configs/job/{job_trace}', cluster_config)
   else:
-    csv_reader = CSVReader('./configs/job/job_configs_3days.csv', cluster_config)
+    csv_reader = CSVReader('./configs/job/job_configs_lbnl.csv', cluster_config)
   job_configs = csv_reader.generate()
 
   # Simulation environment

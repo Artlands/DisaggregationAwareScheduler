@@ -3,7 +3,7 @@
 # node_status = False   # Print the node status to the console
 # job_status  = False   # Print the job status to the console
 # raw_id      = False   # Use the raw job id
-# job_trace   = 'job_configs_4d.csv'
+# job_trace   = 'job_configs_lbnl.csv'
 
 # # ==== Cluster configuration ====
 # total_memory_per_rack = 40 * 1024  # Total memory capacity per rack in GB

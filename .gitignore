@@ -27,7 +27,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 analytics/
-monitoring/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -134,6 +133,7 @@ dmypy.json
 # Experiment results and temporary python files
 # /configs
 # /monitoring
+/cluster
 /__pycache__
 /tmp
 *.json
