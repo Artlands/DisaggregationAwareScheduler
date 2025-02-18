@@ -5,7 +5,11 @@ from utils.utils import interpolate
 
 from scipy.interpolate import interp1d
 
-# The following values are based on the experimental results from PARSEC benchmarks
+# The following values are based on the experimental results from PARSEC benchmarks.
+# The slowdown values correspond to the x-axis values of Figure 5 (top) in the CLUSTER paper and the CDF values correspond to the y-axis values. 
+# Based on these data points, we create an inverse CDF function (CDF values are in x-axis and slowdowns are in y-axis) to calculate the slowdown based on the assigned randomness of the job. 
+# This method can make sure that the distribution of the slowdowns matches the distribution of the PARSEC results.
+
 intra_rack_slowdown = [1.03935594e-01, 1.37285957e+00, 1.37771886e+00, 1.83561765e+00,
                        4.67776163e+00, 4.83442012e+00, 5.87674881e+00, 1.37825116e+01,
                        3.06614957e+01, 1.06645952e+02, 1.66840426e+02] 
@@ -107,6 +111,7 @@ class Scheduler(object):
       rm_ratio = 1 - self.cluster.compute_node_memory_capacity/job.max_memory
       
       if self.slowdown_factor == -1:
+        # We use the inverse CDF function to calculate the slowdown based on the assigned randomness of the job
         if cross_rack:
           base_slowdown = inverse_cdf_inter(job.randomness)
         else:
