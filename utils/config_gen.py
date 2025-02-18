@@ -6,9 +6,13 @@ import yaml
 sys.path.insert(0, './configs/')
 from sim_config import *
 
-# Remove the existing config files in the directory
-for filename in os.listdir('./configs/cluster/gen'):
-  os.remove(f'./configs/cluster/gen/{filename}')
+
+if not os.path.exists('./configs/cluster/gen'):
+  os.makedirs('./configs/cluster/gen')
+else:
+  # Remove the existing config files in the directory
+  for filename in os.listdir('./configs/cluster/gen'):
+    os.remove(f'./configs/cluster/gen/{filename}')
     
 
 for compute_node_capacity in compute_node_capacities:
