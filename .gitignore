@@ -131,13 +131,9 @@ dmypy.json
 .pyre/
 
 # Experiment results and temporary python files
-# /configs
-# /monitoring
-/cluster
 /__pycache__
 /tmp
 *.json
-*.csv
 tmp*.py
 *.ipynb
 *.png

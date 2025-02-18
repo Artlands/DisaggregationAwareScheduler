@@ -10,5 +10,4 @@ gen:
 
 # A target that removes all .json files in the ./monitoring directory
 clean:
-	rm ./monitoring/*.json
-	rm ./configs/cluster/gen/*.yaml
+	rm ./monitoring/*.json ./configs/cluster/gen/*.yaml
