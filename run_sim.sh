@@ -2,7 +2,7 @@
 
 # Define the run_sim function
 run_sim() {
-    # Run simulation with each configuration file ending in "_bf.yaml"
+    # Run simulation with each configuration file
     for file in $PWD/configs/cluster/gen/*; do
         if [[ $file == *.yaml ]]; then
             echo "Running simulation with configuration file: $file"
@@ -11,12 +11,6 @@ run_sim() {
     done
 }
 
-# source $PWD/.venv/bin/activate
-
 # Call the run_sim function
 run_sim
 
-# # Wait for all background processes to finish
-# wait
-
-# deactivate

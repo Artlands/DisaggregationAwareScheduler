@@ -132,11 +132,12 @@ dmypy.json
 .pyre/
 
 # Experiment results and temporary python files
-/__pycache__
-/tmp
+tmp/
+job_raw/
 *.json
 tmp*.py
 *.ipynb
 *.png
 *.yaml
 *.out
+submit.sh
